@@ -12,18 +12,19 @@ jobs:
         with:
           channel: 'stable'
 
-      - name: Create Android Project Boilerplate
+      - name: Create Fresh Android Project
         run: |
-          # Ini perintah sakti: GitHub akan membuatkan semua file Android yang benar
-          flutter create --platforms android .
+          # Menghapus sisa-sisa lama dan membuat project baru yang bersih
+          rm -rf android
+          flutter create --platforms android --org com.yudhanugraha .
           
       - name: Inject Google TV Support
         run: |
-          # Menambahkan izin Google TV secara otomatis ke dalam file yang baru dibuat
+          # Menambahkan kategori Leanback agar muncul di Google TV
           sed -i '/android.intent.category.LAUNCHER/a \                <category android:name="android.intent.category.LEANBACK_LAUNCHER" />' android/app/src/main/AndroidManifest.xml
 
-      - name: Build APK
-        run: flutter build apk --release --no-codesign
+      - name: Build APK (Perintah yang sudah diperbaiki)
+        run: flutter build apk --release
 
       - name: Upload APK Result
         uses: actions/upload-artifact@v4
