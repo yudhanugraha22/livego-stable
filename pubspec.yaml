@@ -1,5 +1,5 @@
 name: livego_app
-description: Livego Streaming App
+description: Livego Official App
 version: 1.0.0+1
 environment:
   sdk: '>=3.0.0 <4.0.0'

@@ -5,27 +5,28 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout Code
-        uses: actions/checkout@v4 # Versi terbaru
-
-      - name: Setup Java
-        uses: actions/setup-java@v4 # Versi terbaru
-        with:
-          distribution: 'zulu'
-          java-version: '17'
+        uses: actions/checkout@v4
 
       - name: Setup Flutter
         uses: subosito/flutter-action@v2
         with:
           channel: 'stable'
 
-      - name: Install Dependencies
-        run: flutter pub get
+      - name: Create Android Project Boilerplate
+        run: |
+          # Ini perintah sakti: GitHub akan membuatkan semua file Android yang benar
+          flutter create --platforms android .
+          
+      - name: Inject Google TV Support
+        run: |
+          # Menambahkan izin Google TV secara otomatis ke dalam file yang baru dibuat
+          sed -i '/android.intent.category.LAUNCHER/a \                <category android:name="android.intent.category.LEANBACK_LAUNCHER" />' android/app/src/main/AndroidManifest.xml
 
       - name: Build APK
         run: flutter build apk --release --no-codesign
 
       - name: Upload APK Result
-        uses: actions/upload-artifact@v4 # Versi terbaru
+        uses: actions/upload-artifact@v4
         with:
           name: livego-apk
           path: build/app/outputs/flutter-apk/app-release.apk
