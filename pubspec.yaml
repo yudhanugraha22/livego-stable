@@ -6,6 +6,7 @@ dependencies:
   flutter:
     sdk: flutter
   http: ^1.1.0
-  path_provider: ^2.1.1 # Untuk hapus cache
+  path_provider: ^2.1.1
+  shared_preferences: ^2.2.2 # MESIN PENYIMPAN PERMANEN
 flutter:
   uses-material-design: true

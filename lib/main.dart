@@ -14,10 +14,9 @@ class MainNavigation extends StatefulWidget {
 }
 class _MainNavigationState extends State<MainNavigation> {
   int _idx = 0;
-  Map<String, bool> apis = {"Melolo":true,"DramaBox":true,"DotDrama":true,"Netshort":true,"Stardusttv":true,"Reelife":true,"DramaBite":true,"Velolo":true};
   @override Widget build(BuildContext context) {
     return Scaffold(
-      body: IndexedStack(index: _idx, children: [HomePage(apis: apis), const Center(child: Text("Halaman Unduhan")), AccountPage(apis: apis, onCh: (v)=>setState(()=>apis=v))]),
+      body: IndexedStack(index: _idx, children: [const HomePage(), const Center(child: Text("Unduhan")), const AccountPage()]),
       bottomNavigationBar: BottomNavigationBar(currentIndex: _idx, onTap: (i)=>setState(()=>_idx=i), backgroundColor: const Color(0xFF161B22), selectedItemColor: Colors.blueAccent, type: BottomNavigationBarType.fixed, items: const [BottomNavigationBarItem(icon: Icon(Icons.home), label: "HOME"), BottomNavigationBarItem(icon: Icon(Icons.download), label: "UNDUHAN"), BottomNavigationBarItem(icon: Icon(Icons.person), label: "AKUN")]),
     );
   }
