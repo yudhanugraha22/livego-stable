@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'widgets.dart';
 
 class AccountPage extends StatefulWidget {
   const AccountPage({super.key});
@@ -8,78 +7,323 @@ class AccountPage extends StatefulWidget {
 }
 
 class _AccountPageState extends State<AccountPage> {
-  String nav = "Otomatis", drm = "Auto";
-  bool bg = false, cache = true, rot = true;
-
   @override
-  void initState() { super.initState(); _loadSettings(); }
-
-  // LOAD DATA DARI MEMORI HP
-  _loadSettings() async {
-    final p = await SharedPreferences.getInstance();
-    setState(() {
-      nav = p.getString('nav') ?? "Otomatis";
-      drm = p.getString('drm') ?? "Auto";
-      bg = p.getBool('bg') ?? false;
-      cache = p.getBool('cache') ?? true;
-      rot = p.getBool('rot') ?? true;
-    });
-  }
-
-  // SIMPAN DATA KE MEMORI HP
-  _save(String k, dynamic v) async {
-    final p = await SharedPreferences.getInstance();
-    if (v is String) p.setString(k, v);
-    if (v is bool) p.setBool(k, v);
-  }
-
-  @override Widget build(BuildContext context) {
+  Widget build(BuildContext context) {
     return Scaffold(
-      body: ListView(padding: const EdgeInsets.all(15), children: [
-        const SizedBox(height: 40),
-        _card([ListTile(leading: const CircleAvatar(backgroundColor: Color(0xFF8B5CF6), child: Icon(Icons.play_arrow, color: Colors.white)), title: const Text("User Penggemar"), subtitle: const Text("Akun CineFlow"))]),
-        const SizedBox(height: 20),
-        _label("PENGATURAN SISTEM"),
-        _card([
-          _item(Icons.settings, "Navigasi Hardware", nav, ()=>_showNav()),
-          _switch(Icons.image, "Background Poster", bg, (v){ setState(()=>bg=v); _save('bg',v); }),
-          _switch(Icons.cached, "Gunakan Cache", cache, (v){ setState(()=>cache=v); _save('cache',v); }),
-          _switch(Icons.screen_rotation, "Rotasi Manual", rot, (v){ setState(()=>rot=v); _save('rot',v); }),
-          _item(Icons.lock, "Widevine DRM", drm, ()=>_showDRM()),
-          _item(Icons.layers, "Kelola Sumber Data", "8 API Aktif", ()=>_goAPI()),
-        ]),
-        const SizedBox(height: 20),
-        _label("DUKUNGAN"),
-        _card([_item(Icons.update, "Cek Pembaruan", "v1.0.0", (){}), _item(Icons.message, "Feedback", "Hubungi Developer", (){})]),
-      ]),
+      backgroundColor: const Color(0xFF0A0A0A),
+      body: ListView(
+        padding: const EdgeInsets.all(16),
+        children: [
+          const SizedBox(height: 40),
+          // Header
+          Container(
+            padding: const EdgeInsets.all(20),
+            decoration: BoxDecoration(
+              gradient: const LinearGradient(
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+                colors: [Color(0xFF8B5CF6), Color(0xFF6366F1)],
+              ),
+              borderRadius: BorderRadius.circular(20),
+            ),
+            child: Row(
+              children: [
+                const CircleAvatar(
+                  radius: 30,
+                  backgroundColor: Colors.white,
+                  child: Icon(Icons.person, size: 35, color: Color(0xFF8B5CF6)),
+                ),
+                const SizedBox(width: 15),
+                Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: const [
+                    Text("User Penggemar", style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.white)),
+                    Text("Akun CineFlow", style: TextStyle(color: Colors.white70)),
+                  ],
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(height: 20),
+          
+          // KOLEKSI
+          const Text("KOLEKSI", style: TextStyle(fontSize: 12, color: Colors.grey, fontWeight: FontWeight.bold)),
+          const SizedBox(height: 10),
+          _menuCard(Icons.history, "Riwayat", "Lanjutkan dari tontonan terakhir", () {
+            Navigator.push(context, MaterialPageRoute(builder: (c) => const HistoryPage()));
+          }),
+          _menuCard(Icons.favorite, "Favorit", "Drama yang Anda simpan", () {
+            Navigator.push(context, MaterialPageRoute(builder: (c) => const FavoritePage()));
+          }),
+          
+          const SizedBox(height: 20),
+          
+          // PENGATURAN
+          const Text("PENGATURAN", style: TextStyle(fontSize: 12, color: Colors.grey, fontWeight: FontWeight.bold)),
+          const SizedBox(height: 10),
+          _menuCard(Icons.settings, "Pengaturan", "Atur tampilan & player", () {
+            Navigator.push(context, MaterialPageRoute(builder: (c) => const SettingsPage()));
+          }),
+          _menuCard(Icons.source, "Kelola Sumber Data", "Aktifkan platform yang muncul", () {
+            Navigator.push(context, MaterialPageRoute(builder: (c) => const SourceManager()));
+          }),
+          
+          const SizedBox(height: 20),
+          
+          // DUKUNGAN
+          const Text("DUKUNGAN", style: TextStyle(fontSize: 12, color: Colors.grey, fontWeight: FontWeight.bold)),
+          const SizedBox(height: 10),
+          _menuCard(Icons.update, "Periksa Pembaruan", "Cek versi terbaru", () {}),
+          _menuCard(Icons.feedback, "Kirim Feedback", "Laporkan bug atau saran", () {}),
+          _menuCard(Icons.help, "Bantuan", "Panduan penggunaan", () {}),
+        ],
+      ),
     );
   }
-
-  void _showNav() => _dialog("Navigasi", ["Otomatis", "Smartphone", "Android TV"], nav, (v){ setState(()=>nav=v); _save('nav',v); });
-  void _showDRM() => _dialog("DRM", ["Auto", "Paksa L3", "Berhenti L3"], drm, (v){ setState(()=>drm=v); _save('drm',v); });
   
-  void _dialog(String t, List<String> o, String g, Function(String) s) => showDialog(context: context, builder: (c)=>AlertDialog(title: Text(t), backgroundColor: const Color(0xFF161B22), content: Column(mainAxisSize: MainAxisSize.min, children: o.map((v)=>RadioListTile(title: Text(v), value: v, groupValue: g, onChanged: (x){s(x!); Navigator.pop(c);})).toList())));
-  void _goAPI() => Navigator.push(context, MaterialPageRoute(builder: (c)=>const SourceManager()));
-  Widget _label(String t) => Padding(padding: const EdgeInsets.only(left: 10, bottom: 8), child: Text(t, style: const TextStyle(fontSize: 11, color: Colors.grey, fontWeight: FontWeight.bold)));
-  Widget _card(List<Widget> i) => Container(decoration: BoxDecoration(color: const Color(0xFF161B22), borderRadius: BorderRadius.circular(20)), child: Column(children: i));
-  Widget _item(IconData i, String t, String s, VoidCallback click) => TVButton(onTap: click, child: ListTile(leading: Icon(i, color: Colors.white70), title: Text(t, style: const TextStyle(fontSize: 14)), subtitle: Text(s, style: const TextStyle(fontSize: 11, color: Colors.blueAccent)), trailing: const Icon(Icons.chevron_right, size: 16)));
-  Widget _switch(IconData i, String t, bool v, Function(bool) c) => TVButton(onTap: ()=>c(!v), child: SwitchListTile(secondary: Icon(i, color: Colors.white70), title: Text(t, style: const TextStyle(fontSize: 14)), value: v, onChanged: c, activeColor: Colors.blueAccent));
+  Widget _menuCard(IconData icon, String title, String subtitle, VoidCallback onTap) {
+    return Container(
+      margin: const EdgeInsets.only(bottom: 10),
+      decoration: BoxDecoration(
+        color: const Color(0xFF1A1A1A),
+        borderRadius: BorderRadius.circular(15),
+      ),
+      child: ListTile(
+        leading: Icon(icon, color: const Color(0xFF8B5CF6)),
+        title: Text(title, style: const TextStyle(color: Colors.white)),
+        subtitle: Text(subtitle, style: const TextStyle(color: Colors.grey, fontSize: 12)),
+        trailing: const Icon(Icons.chevron_right, color: Colors.grey),
+        onTap: onTap,
+      ),
+    );
+  }
 }
 
+// Halaman Riwayat
+class HistoryPage extends StatelessWidget {
+  const HistoryPage({super.key});
+  
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      backgroundColor: const Color(0xFF0A0A0A),
+      appBar: AppBar(
+        title: const Text("Riwayat", style: TextStyle(color: Colors.white)),
+        backgroundColor: const Color(0xFF1A1A1A),
+      ),
+      body: const Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(Icons.history, size: 80, color: Colors.grey),
+            SizedBox(height: 20),
+            Text("Belum ada riwayat tontonan", style: TextStyle(color: Colors.grey)),
+            SizedBox(height: 10),
+            Text("Drama yang kamu tonton akan muncul di sini", style: TextStyle(color: Colors.grey, fontSize: 12)),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+// Halaman Favorit
+class FavoritePage extends StatelessWidget {
+  const FavoritePage({super.key});
+  
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      backgroundColor: const Color(0xFF0A0A0A),
+      appBar: AppBar(
+        title: const Text("Favorit", style: TextStyle(color: Colors.white)),
+        backgroundColor: const Color(0xFF1A1A1A),
+      ),
+      body: const Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(Icons.favorite, size: 80, color: Colors.redAccent),
+            SizedBox(height: 20),
+            Text("Belum ada drama favorit", style: TextStyle(color: Colors.grey)),
+            SizedBox(height: 10),
+            Text("Klik ikon hati untuk menambahkan ke favorit", style: TextStyle(color: Colors.grey, fontSize: 12)),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+// Halaman Pengaturan
+class SettingsPage extends StatefulWidget {
+  const SettingsPage({super.key});
+  @override State<SettingsPage> createState() => _SettingsPageState();
+}
+
+class _SettingsPageState extends State<SettingsPage> {
+  bool bgPoster = true;
+  bool useCache = true;
+  bool rotasiManual = false;
+  String drm = "Auto";
+  
+  @override
+  void initState() {
+    super.initState();
+    _loadSettings();
+  }
+  
+  Future<void> _loadSettings() async {
+    final p = await SharedPreferences.getInstance();
+    setState(() {
+      bgPoster = p.getBool('bg_poster') ?? true;
+      useCache = p.getBool('use_cache') ?? true;
+      rotasiManual = p.getBool('rotasi_manual') ?? false;
+      drm = p.getString('drm') ?? "Auto";
+    });
+  }
+  
+  Future<void> _saveSetting(String key, dynamic value) async {
+    final p = await SharedPreferences.getInstance();
+    if (value is bool) {
+      await p.setBool(key, value);
+    } else if (value is String) {
+      await p.setString(key, value);
+    }
+  }
+  
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      backgroundColor: const Color(0xFF0A0A0A),
+      appBar: AppBar(
+        title: const Text("Pengaturan", style: TextStyle(color: Colors.white)),
+        backgroundColor: const Color(0xFF1A1A1A),
+      ),
+      body: ListView(
+        padding: const EdgeInsets.all(16),
+        children: [
+          const Text("TAMPILAN", style: TextStyle(color: Colors.grey, fontWeight: FontWeight.bold)),
+          const SizedBox(height: 10),
+          _buildSwitchTile(Icons.image, "Background Poster", bgPoster, "Tampilkan poster sebagai background", (v) async {
+            setState(() => bgPoster = v);
+            await _saveSetting('bg_poster', v);
+          }),
+          _buildSwitchTile(Icons.cached, "Gunakan Cache", useCache, "Simpan stream agar playback stabil", (v) async {
+            setState(() => useCache = v);
+            await _saveSetting('use_cache', v);
+          }),
+          _buildSwitchTile(Icons.rotate_right, "Rotasi Manual", rotasiManual, "Tampilkan tombol rotasi manual", (v) async {
+            setState(() => rotasiManual = v);
+            await _saveSetting('rotasi_manual', v);
+          }),
+          const SizedBox(height: 20),
+          const Text("PLAYER", style: TextStyle(color: Colors.grey, fontWeight: FontWeight.bold)),
+          const SizedBox(height: 10),
+          _buildDrmSelector(),
+        ],
+      ),
+    );
+  }
+  
+  Widget _buildSwitchTile(IconData icon, String title, bool value, String subtitle, Function(bool) onChanged) {
+    return Container(
+      margin: const EdgeInsets.only(bottom: 10),
+      decoration: BoxDecoration(
+        color: const Color(0xFF1A1A1A),
+        borderRadius: BorderRadius.circular(15),
+      ),
+      child: SwitchListTile(
+        secondary: Icon(icon, color: const Color(0xFF8B5CF6)),
+        title: Text(title, style: const TextStyle(color: Colors.white)),
+        subtitle: Text(subtitle, style: const TextStyle(color: Colors.grey, fontSize: 11)),
+        value: value,
+        onChanged: onChanged,
+        activeColor: const Color(0xFF8B5CF6),
+      ),
+    );
+  }
+  
+  Widget _buildDrmSelector() {
+    return Container(
+      decoration: BoxDecoration(
+        color: const Color(0xFF1A1A1A),
+        borderRadius: BorderRadius.circular(15),
+      ),
+      child: ListTile(
+        leading: const Icon(Icons.lock, color: Color(0xFF8B5CF6)),
+        title: const Text("Widevine DRM", style: TextStyle(color: Colors.white)),
+        subtitle: Text(drm, style: const TextStyle(color: Colors.grey)),
+        trailing: const Icon(Icons.chevron_right, color: Colors.grey),
+        onTap: () => _showDrmOptions(),
+      ),
+    );
+  }
+  
+  void _showDrmOptions() {
+    showDialog(
+      context: context,
+      builder: (c) => AlertDialog(
+        title: const Text("Widevine DRM", style: TextStyle(color: Colors.white)),
+        backgroundColor: const Color(0xFF1A1A1A),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: ["Auto", "Paksa L3", "Berhenti L3"].map((opt) => RadioListTile(
+            title: Text(opt, style: const TextStyle(color: Colors.white)),
+            value: opt,
+            groupValue: drm,
+            onChanged: (v) async {
+              setState(() => drm = v as String);
+              await _saveSetting('drm', v);
+              Navigator.pop(c);
+            },
+          )).toList(),
+        ),
+      ),
+    );
+  }
+}
+
+// Sumber Data Manager
 class SourceManager extends StatefulWidget {
   const SourceManager({super.key});
   @override State<SourceManager> createState() => _SourceManagerState();
 }
-class _SourceManagerState extends State<SourceManager> {
-  Map<String, bool> s = {"Melolo":true,"DramaBox":true,"DotDrama":true,"Netshort":true,"Stardusttv":true,"Reelife":true,"DramaBite":true,"FreeReels":true};
-  @override void initState() { super.initState(); _load(); }
-  _load() async {
-    final p = await SharedPreferences.getInstance();
-    setState(() { s.forEach((k, v) { s[k] = p.getBool('api_$k') ?? true; }); });
-  }
-  _save(String k, bool v) async { final p = await SharedPreferences.getInstance(); p.setBool('api_$k', v); }
 
-  @override Widget build(BuildContext context) {
-    return Scaffold(appBar: AppBar(title: const Text("Sumber Data")), body: ListView(padding: const EdgeInsets.all(15), children: s.keys.map((k)=>Container(margin: const EdgeInsets.only(bottom: 10), decoration: BoxDecoration(color: const Color(0xFF161B22), borderRadius: BorderRadius.circular(15)), child: TVButton(onTap: (){ setState(()=>s[k]=!s[k]!); _save(k, s[k]!); }, child: SwitchListTile(title: Text(k), value: s[k]!, onChanged: (v){ setState(()=>s[k]=v); _save(k,v); }, activeColor: Colors.blueAccent)))).toList()));
+class _SourceManagerState extends State<SourceManager> {
+  Map<String, bool> sources = {
+    "FreeReels": true,
+    "Melolo": true,
+  };
+  
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      backgroundColor: const Color(0xFF0A0A0A),
+      appBar: AppBar(
+        title: const Text("Sumber Data", style: TextStyle(color: Colors.white)),
+        backgroundColor: const Color(0xFF1A1A1A),
+      ),
+      body: ListView(
+        padding: const EdgeInsets.all(16),
+        children: sources.keys.map((key) => Container(
+          margin: const EdgeInsets.only(bottom: 10),
+          decoration: BoxDecoration(
+            color: const Color(0xFF1A1A1A),
+            borderRadius: BorderRadius.circular(15),
+          ),
+          child: SwitchListTile(
+            title: Text(key, style: const TextStyle(color: Colors.white)),
+            value: sources[key] ?? true,
+            onChanged: (value) {
+              setState(() {
+                sources[key] = value;
+              });
+            },
+            activeColor: const Color(0xFF8B5CF6),
+          ),
+        )).toList(),
+      ),
+    );
   }
 }

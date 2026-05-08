@@ -8,7 +8,8 @@ class DramaAPI {
   
   static String _generateSignature(String method, String path, String timestamp) {
     String payload = '$method:$path:$timestamp';
-    var hmac = Hmac(sha256, utf8.encode(apiSecret));
+    var key = utf8.encode(apiSecret);
+    var hmac = Hmac(sha256, key);
     var digest = hmac.convert(utf8.encode(payload));
     return digest.toString();
   }
@@ -31,36 +32,60 @@ class DramaAPI {
       },
     );
     
+    print('Status: ${response.statusCode}');
+    print('Body: ${response.body}');
+    
     if (response.statusCode == 200) {
       return json.decode(response.body);
     } else {
-      throw Exception('Gagal: ${response.statusCode}');
+      return {'error': true, 'code': response.statusCode, 'body': response.body};
     }
   }
   
   static Future<List<dynamic>> getHome(String category, String lang) async {
     try {
-      final data = await _request('GET', '/api/v2/home', {
+      final response = await _request('GET', '/api/v2/home', {
         'category_p': category, 
         'lang': lang
       });
-      return data['data'] ?? [];
+      if (response.containsKey('error')) {
+        print('API Error: ${response['code']}');
+        // Data dummy untuk testing
+        return _getDummyData();
+      }
+      return response['data'] ?? [];
     } catch (e) {
-      return [];
+      print('Exception: $e');
+      return _getDummyData();
     }
   }
   
   static Future<List<dynamic>> search(String category, String query, String lang, {int page = 1}) async {
     try {
-      final data = await _request('GET', '/api/v2/search', {
+      final response = await _request('GET', '/api/v2/search', {
         'category_p': category, 
         'q': query, 
         'lang': lang, 
         'page': page.toString()
       });
-      return data['data'] ?? [];
+      if (response.containsKey('error')) {
+        return [];
+      }
+      return response['data'] ?? [];
     } catch (e) {
       return [];
     }
+  }
+  
+  // Dummy data untuk testing (kalau API error)
+  static List<dynamic> _getDummyData() {
+    return [
+      {'id': '1', 'title': 'Menikahi Ayah Mantanku', 'cover': '', 'views': '12.5K', 'chapters': '61', 'status': 'Completed'},
+      {'id': '2', 'title': 'Cinta Suami Muda', 'cover': '', 'views': '154.9K', 'chapters': '53', 'status': 'Completed'},
+      {'id': '3', 'title': 'Balas Dendam Ayah', 'cover': '', 'views': '73.9K', 'chapters': '69', 'status': 'Completed'},
+      {'id': '4', 'title': 'Istri Masa Depan CEO', 'cover': '', 'views': '45.2K', 'chapters': '48', 'status': 'Ongoing'},
+      {'id': '5', 'title': 'Jebakan Sang Taipan', 'cover': '', 'views': '23.8K', 'chapters': '32', 'status': 'Completed'},
+      {'id': '6', 'title': 'Hidup Berjaya Anak Terbuang', 'cover': '', 'views': '89.1K', 'chapters': '78', 'status': 'Completed'},
+    ];
   }
 }
