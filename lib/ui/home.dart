@@ -82,7 +82,13 @@ class _HomePageState extends State<HomePage> {
           IconButton(
             icon: const Icon(Icons.search, color: Colors.white),
             onPressed: () {
-              ScaffoldMessenger.of(context).showSnackBar(
+              Navigator.push(context, MaterialPageRoute(builder: (c) => DetailPage(
+      dramaId: drama["id"],
+      title: drama["title"],
+      cover: drama["cover"] ?? "",
+      platform: selectedPlatform,
+    )));
+    // ScaffoldMessenger.of(context).showSnackBar(
                 const SnackBar(content: Text("Fitur pencarian segera hadir"))
               );
             },
@@ -196,7 +202,13 @@ class _HomePageState extends State<HomePage> {
   Widget _buildDramaCard(Map<String, dynamic> drama, bool isAndroidTV) {
     return GestureDetector(
       onTap: () {
-        ScaffoldMessenger.of(context).showSnackBar(
+        Navigator.push(context, MaterialPageRoute(builder: (c) => DetailPage(
+      dramaId: drama["id"],
+      title: drama["title"],
+      cover: drama["cover"] ?? "",
+      platform: selectedPlatform,
+    )));
+    // ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text(drama['title']), duration: const Duration(seconds: 1))
         );
       },
