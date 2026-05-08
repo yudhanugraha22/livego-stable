@@ -9,24 +9,41 @@ class HomePage extends StatefulWidget {
 
 class _HomePageState extends State<HomePage> {
   List<dynamic> dramas = [];
+  List<dynamic> banners = [];
   bool isLoading = true;
   String selectedCategory = 'freereels';
+  int currentBannerIndex = 0;
   
   final List<Map<String, String>> categories = [
-    {'id': 'freereels', 'name': 'FreeReels'},
-    {'id': 'melolo', 'name': 'Melolo'},
+    {'id': 'freereels', 'name': 'FreeReels', 'icon': '🎬'},
+    {'id': 'melolo', 'name': 'Melolo', 'icon': '🎭'},
   ];
   
   @override
   void initState() { 
     super.initState(); 
-    _fetchDramas();
+    _fetchData();
+  }
+  
+  Future<void> _fetchData() async {
+    setState(() => isLoading = true);
+    await Future.wait([
+      _fetchDramas(),
+      _fetchBanners(),
+    ]);
+    setState(() => isLoading = false);
   }
   
   Future<void> _fetchDramas() async {
-    setState(() => isLoading = true);
     dramas = await DramaAPI.getHome(selectedCategory, 'id');
-    setState(() => isLoading = false);
+  }
+  
+  Future<void> _fetchBanners() async {
+    // Banner bisa dari API atau dummy
+    banners = [
+      {'title': 'Menikahi Ayah Mantanku', 'image': ''},
+      {'title': 'Cinta Suami Muda', 'image': ''},
+    ];
   }
   
   void _changeCategory(String categoryId) async {
@@ -35,14 +52,30 @@ class _HomePageState extends State<HomePage> {
       isLoading = true;
     });
     await _fetchDramas();
+    setState(() => isLoading = false);
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      backgroundColor: const Color(0xFF0A0A0A),
       appBar: AppBar(
-        backgroundColor: const Color(0xFF161B22),
-        title: const Text("Livego", style: TextStyle(color: Colors.blueAccent, fontWeight: FontWeight.bold)),
+        backgroundColor: Colors.transparent,
+        elevation: 0,
+        title: Row(
+          children: [
+            Container(
+              padding: const EdgeInsets.all(8),
+              decoration: BoxDecoration(
+                color: const Color(0xFF8B5CF6),
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: const Text("CF", style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
+            ),
+            const SizedBox(width: 10),
+            const Text("CineFlow", style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18)),
+          ],
+        ),
         actions: [
           IconButton(
             icon: const Icon(Icons.search, color: Colors.white),
@@ -52,100 +85,206 @@ class _HomePageState extends State<HomePage> {
           ),
         ],
       ),
-      body: Column(
-        children: [
-          // Category selector
-          Container(
-            height: 50,
-            padding: const EdgeInsets.symmetric(horizontal: 15),
-            child: ListView.builder(
-              scrollDirection: Axis.horizontal,
-              itemCount: categories.length,
-              itemBuilder: (ctx, i) => Padding(
-                padding: const EdgeInsets.only(right: 10),
-                child: FilterChip(
-                  label: Text(categories[i]['name']!),
-                  selected: selectedCategory == categories[i]['id'],
-                  onSelected: (_) => _changeCategory(categories[i]['id']!),
-                  backgroundColor: Colors.white10,
-                  selectedColor: const Color(0xFF8B5CF6),
-                  labelStyle: TextStyle(
-                    color: selectedCategory == categories[i]['id'] ? Colors.white : Colors.grey
+      body: RefreshIndicator(
+        onRefresh: _fetchData,
+        child: isLoading
+          ? const Center(child: CircularProgressIndicator(color: Color(0xFF8B5CF6)))
+          : SingleChildScrollView(
+              physics: const AlwaysScrollableScrollPhysics(),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  // Banner Carousel
+                  if (banners.isNotEmpty)
+                    SizedBox(
+                      height: 200,
+                      child: PageView.builder(
+                        itemCount: banners.length,
+                        onPageChanged: (index) => setState(() => currentBannerIndex = index),
+                        itemBuilder: (ctx, i) => Container(
+                          margin: const EdgeInsets.symmetric(horizontal: 15),
+                          decoration: BoxDecoration(
+                            borderRadius: BorderRadius.circular(20),
+                            gradient: const LinearGradient(
+                              begin: Alignment.topLeft,
+                              end: Alignment.bottomRight,
+                              colors: [Color(0xFF8B5CF6), Color(0xFF6366F1)],
+                            ),
+                          ),
+                          child: Center(
+                            child: Text(
+                              banners[i]['title'],
+                              style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.white),
+                            ),
+                          ),
+                        ),
+                      ),
+                    ),
+                  
+                  // Category Chips
+                  const SizedBox(height: 20),
+                  Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 15),
+                    child: Row(
+                      children: [
+                        const Text("Platform", style: TextStyle(color: Colors.grey, fontSize: 12)),
+                        const SizedBox(width: 10),
+                        ...categories.map((cat) => Padding(
+                          padding: const EdgeInsets.only(right: 10),
+                          child: FilterChip(
+                            label: Text("${cat['icon']} ${cat['name']}"),
+                            selected: selectedCategory == cat['id'],
+                            onSelected: (_) => _changeCategory(cat['id']!),
+                            backgroundColor: const Color(0xFF1A1A1A),
+                            selectedColor: const Color(0xFF8B5CF6),
+                            labelStyle: TextStyle(
+                              color: selectedCategory == cat['id'] ? Colors.white : Colors.grey,
+                              fontSize: 12,
+                            ),
+                          ),
+                        )),
+                      ],
+                    ),
                   ),
-                ),
+                  
+                  // Section Title
+                  const SizedBox(height: 20),
+                  Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 15),
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Text(
+                          "🔥 ${selectedCategory == 'freereels' ? 'FreeReels' : 'Melolo'} Pilihan",
+                          style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.white),
+                        ),
+                        TextButton(
+                          onPressed: () {},
+                          child: const Text("Lihat Semua >", style: TextStyle(color: Color(0xFF8B5CF6), fontSize: 12)),
+                        ),
+                      ],
+                    ),
+                  ),
+                  
+                  // Drama Grid
+                  dramas.isEmpty
+                    ? const Padding(
+                        padding: EdgeInsets.all(50),
+                        child: Center(child: Text("Tidak ada drama", style: TextStyle(color: Colors.grey))),
+                      )
+                    : GridView.builder(
+                        shrinkWrap: true,
+                        physics: const NeverScrollableScrollPhysics(),
+                        padding: const EdgeInsets.all(15),
+                        gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                          crossAxisCount: 2,
+                          childAspectRatio: 0.65,
+                          crossAxisSpacing: 12,
+                          mainAxisSpacing: 12,
+                        ),
+                        itemCount: dramas.length > 10 ? 10 : dramas.length,
+                        itemBuilder: (c, i) => _buildDramaCard(dramas[i]),
+                      ),
+                  
+                  const SizedBox(height: 80),
+                ],
               ),
             ),
-          ),
-          // Content
-          Expanded(
-            child: isLoading
-              ? const Center(child: CircularProgressIndicator(color: Color(0xFF8B5CF6)))
-              : dramas.isEmpty
-                ? const Center(child: Text("Tidak ada drama", style: TextStyle(color: Colors.grey)))
-                : GridView.builder(
-                    padding: const EdgeInsets.all(15),
-                    gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                      crossAxisCount: 2,
-                      childAspectRatio: 0.7,
-                      crossAxisSpacing: 10,
-                      mainAxisSpacing: 10,
-                    ),
-                    itemCount: dramas.length > 20 ? 20 : dramas.length,
-                    itemBuilder: (c, i) => _buildDramaCard(dramas[i]),
-                  ),
-          ),
-        ],
       ),
     );
   }
   
   Widget _buildDramaCard(dynamic drama) {
-    return InkWell(
+    return GestureDetector(
       onTap: () {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(drama['title'] ?? 'Drama'))
+          SnackBar(content: Text(drama['title'] ?? 'Drama'), duration: const Duration(seconds: 1))
         );
       },
       child: Container(
         decoration: BoxDecoration(
-          color: const Color(0xFF161B22),
-          borderRadius: BorderRadius.circular(12),
+          color: const Color(0xFF1A1A1A),
+          borderRadius: BorderRadius.circular(16),
         ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             ClipRRect(
               borderRadius: const BorderRadius.only(
-                topLeft: Radius.circular(12),
-                topRight: Radius.circular(12),
+                topLeft: Radius.circular(16),
+                topRight: Radius.circular(16),
               ),
-              child: Image.network(
-                drama['cover'] ?? '',
-                height: 150,
-                width: double.infinity,
-                fit: BoxFit.cover,
-                errorBuilder: (_, __, ___) => Container(
-                  height: 150,
-                  color: Colors.grey[800],
-                  child: const Icon(Icons.movie, color: Colors.grey, size: 40),
-                ),
+              child: Stack(
+                children: [
+                  Image.network(
+                    drama['cover'] ?? '',
+                    height: 160,
+                    width: double.infinity,
+                    fit: BoxFit.cover,
+                    errorBuilder: (_, __, ___) => Container(
+                      height: 160,
+                      color: const Color(0xFF2A2A2A),
+                      child: const Icon(Icons.movie, color: Colors.grey, size: 40),
+                    ),
+                  ),
+                  Positioned(
+                    bottom: 8,
+                    right: 8,
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 3),
+                      decoration: BoxDecoration(
+                        color: Colors.black.withOpacity(0.7),
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          const Icon(Icons.visibility, size: 10, color: Colors.white),
+                          const SizedBox(width: 2),
+                          Text(_formatViews(drama['views']), style: const TextStyle(fontSize: 9, color: Colors.white)),
+                        ],
+                      ),
+                    ),
+                  ),
+                ],
               ),
             ),
             Padding(
-              padding: const EdgeInsets.all(8),
+              padding: const EdgeInsets.all(10),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
                     drama['title'] ?? 'No Title',
-                    style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w500, color: Colors.white),
+                    style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: Colors.white),
                     maxLines: 2,
                     overflow: TextOverflow.ellipsis,
                   ),
                   const SizedBox(height: 4),
-                  Text(
-                    '${drama['views'] ?? '0'} views',
-                    style: const TextStyle(fontSize: 10, color: Colors.grey),
+                  Row(
+                    children: [
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                        decoration: BoxDecoration(
+                          color: const Color(0xFF8B5CF6).withOpacity(0.2),
+                          borderRadius: BorderRadius.circular(4),
+                        ),
+                        child: Text(
+                          "${drama['chapters'] ?? 0} eps",
+                          style: const TextStyle(fontSize: 9, color: Color(0xFF8B5CF6)),
+                        ),
+                      ),
+                      const SizedBox(width: 6),
+                      if (drama['status'] == 'Completed')
+                        Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                          decoration: BoxDecoration(
+                            color: Colors.green.withOpacity(0.2),
+                            borderRadius: BorderRadius.circular(4),
+                          ),
+                          child: const Text("Selesai", style: TextStyle(fontSize: 9, color: Colors.green)),
+                        ),
+                    ],
                   ),
                 ],
               ),
@@ -155,9 +294,18 @@ class _HomePageState extends State<HomePage> {
       ),
     );
   }
+  
+  String _formatViews(dynamic views) {
+    if (views == null) return '0';
+    String v = views.toString();
+    if (v.contains('M')) return v;
+    if (v.length > 6) return '${(int.parse(v) / 1000000).toStringAsFixed(1)}M';
+    if (v.length > 3) return '${(int.parse(v) / 1000).toStringAsFixed(0)}K';
+    return v;
+  }
 }
 
-// Halaman Pencarian
+// Search Page
 class SearchPage extends StatefulWidget {
   const SearchPage({super.key});
   @override State<SearchPage> createState() => _SearchPageState();
@@ -184,70 +332,73 @@ class _SearchPageState extends State<SearchPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      backgroundColor: const Color(0xFF0A0A0A),
       appBar: AppBar(
-        backgroundColor: const Color(0xFF161B22),
+        backgroundColor: Colors.transparent,
+        elevation: 0,
         title: TextField(
           controller: _controller,
           autofocus: true,
           style: const TextStyle(color: Colors.white),
           onSubmitted: (_) => _search(),
-          decoration: const InputDecoration(
-            hintText: "Cari drama...",
-            hintStyle: TextStyle(color: Colors.grey),
-            border: InputBorder.none,
+          decoration: InputDecoration(
+            hintText: "Cari judul drama...",
+            hintStyle: const TextStyle(color: Colors.grey),
+            border: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(30),
+              borderSide: BorderSide.none,
+            ),
+            filled: true,
+            fillColor: const Color(0xFF1A1A1A),
+            prefixIcon: const Icon(Icons.search, color: Colors.grey),
           ),
         ),
       ),
       body: Column(
         children: [
-          // Category filter
-          Container(
-            height: 50,
-            padding: const EdgeInsets.symmetric(horizontal: 15),
-            child: ListView.builder(
-              scrollDirection: Axis.horizontal,
-              itemCount: categories.length,
-              itemBuilder: (ctx, i) => Padding(
-                padding: const EdgeInsets.only(right: 10),
-                child: FilterChip(
-                  label: Text(categories[i]['name']!),
-                  selected: selectedCategory == categories[i]['id'],
-                  onSelected: (_) {
-                    setState(() {
-                      selectedCategory = categories[i]['id']!;
-                      results = [];
-                    });
-                  },
-                  backgroundColor: Colors.white10,
-                  selectedColor: const Color(0xFF8B5CF6),
-                ),
-              ),
-            ),
-          ),
-          // Search button
           Padding(
             padding: const EdgeInsets.all(15),
-            child: ElevatedButton(
-              onPressed: _search,
-              style: ElevatedButton.styleFrom(
-                backgroundColor: const Color(0xFF8B5CF6),
-                minimumSize: const Size(double.infinity, 45),
-              ),
-              child: const Text("CARI", style: TextStyle(color: Colors.white)),
+            child: Row(
+              children: [
+                const Text("Cari di: ", style: TextStyle(color: Colors.white70)),
+                ...categories.map((cat) => Padding(
+                  padding: const EdgeInsets.only(right: 10),
+                  child: FilterChip(
+                    label: Text(cat['name']!),
+                    selected: selectedCategory == cat['id'],
+                    onSelected: (_) {
+                      setState(() {
+                        selectedCategory = cat['id']!;
+                        results = [];
+                      });
+                    },
+                    backgroundColor: const Color(0xFF1A1A1A),
+                    selectedColor: const Color(0xFF8B5CF6),
+                  ),
+                )),
+              ],
             ),
           ),
-          // Results
           Expanded(
             child: isLoading
-              ? const Center(child: CircularProgressIndicator())
+              ? const Center(child: CircularProgressIndicator(color: Color(0xFF8B5CF6)))
               : results.isEmpty
-                ? const Center(child: Text("Ketik judul dan tekan cari", style: TextStyle(color: Colors.grey)))
+                ? const Center(child: Text("Ketik judul drama yang ingin dicari", style: TextStyle(color: Colors.grey)))
                 : ListView.builder(
                     itemCount: results.length,
                     itemBuilder: (c, i) => ListTile(
-                      leading: const Icon(Icons.movie, color: Color(0xFF8B5CF6)),
-                      title: Text(results[i]['title'] ?? 'No Title', style: const TextStyle(color: Colors.white)),
-                      subtitle: Text('${results[i]['views'] ?? 0} views', style: const TextStyle(color: Colors.grey)),
+                      leading: ClipRRect(
+                        borderRadius: BorderRadius.circular(8),
+                        child: Image.network(
+                          results[i]['cover'] ?? '',
+                          width: 50,
+                          height: 70,
+                          fit: BoxFit.cover,
+                          errorBuilder: (_, __, ___) => Container(width: 50, height: 70, color: const Color(0xFF1A1A1A), child: const Icon(Icons.movie)),
+                        ),
+                      ),
+                      title: Text(results[i]['title'] ?? '', style: const TextStyle(color: Colors.white)),
+                      subtitle: Text("${results[i]['views'] ?? 0} views • ${results[i]['chapters'] ?? 0} eps", style: const TextStyle(color: Colors.grey)),
                       onTap: () {
                         ScaffoldMessenger.of(context).showSnackBar(
                           SnackBar(content: Text(results[i]['title'] ?? 'Drama'))
