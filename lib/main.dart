@@ -34,7 +34,8 @@ class _MainPageState extends State<MainPage> {
   
   final List<Widget> _pages = [
     const HomePage(),
-    const AccountPage(),
+    const DownloadPage(),  // UNDUHAN
+    const AccountPage(),    // AKUN
   ];
   
   Future<void> _clearCache() async {
@@ -64,53 +65,18 @@ class _MainPageState extends State<MainPage> {
             onPressed: () async {
               Navigator.of(context).pop(true);
             },
-            child: const Text("Ya", style: TextStyle(color: Color(0xFF8B5CF6))),
-          ),
-        ],
-      ),
-    ) ?? false;
-  }
-  
-  void _showExitDialog() {
-    showDialog(
-      context: context,
-      barrierDismissible: false,
-      builder: (context) => AlertDialog(
-        title: const Text("Keluar Aplikasi", style: TextStyle(color: Colors.white)),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: const [
-            Text("Pilihan:", style: TextStyle(color: Colors.white)),
-            SizedBox(height: 10),
-            Text("• Keluar saja", style: TextStyle(color: Colors.grey)),
-            Text("• Keluar + Bersihkan Cache", style: TextStyle(color: Colors.grey)),
-          ],
-        ),
-        backgroundColor: const Color(0xFF1A1A1A),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.of(context).pop(),
-            child: const Text("Batal", style: TextStyle(color: Colors.grey)),
-          ),
-          TextButton(
-            onPressed: () {
-              Navigator.of(context).pop();
-              _onWillPop();
-            },
             child: const Text("Keluar Saja", style: TextStyle(color: Color(0xFF8B5CF6))),
           ),
           TextButton(
             onPressed: () async {
               await _clearCache();
-              Navigator.of(context).pop();
-              _onWillPop();
+              Navigator.of(context).pop(true);
             },
             child: const Text("Keluar + Hapus Cache", style: TextStyle(color: Colors.redAccent)),
           ),
         ],
       ),
-    );
+    ) ?? false;
   }
 
   @override
@@ -130,6 +96,30 @@ class _MainPageState extends State<MainPage> {
             BottomNavigationBarItem(icon: Icon(Icons.home), label: 'HOME'),
             BottomNavigationBarItem(icon: Icon(Icons.download), label: 'UNDUHAN'),
             BottomNavigationBarItem(icon: Icon(Icons.person), label: 'AKUN'),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+// Halaman Unduhan (placeholder)
+class DownloadPage extends StatelessWidget {
+  const DownloadPage({super.key});
+  
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      backgroundColor: const Color(0xFF0A0A0A),
+      body: const Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(Icons.download, size: 80, color: Colors.grey),
+            SizedBox(height: 20),
+            Text("Belum ada unduhan", style: TextStyle(color: Colors.grey)),
+            SizedBox(height: 10),
+            Text("Drama yang diunduh akan muncul di sini", style: TextStyle(color: Colors.grey, fontSize: 12)),
           ],
         ),
       ),

@@ -99,9 +99,51 @@ class _AccountPageState extends State<AccountPage> {
   }
 }
 
-// Halaman Riwayat
-class HistoryPage extends StatelessWidget {
+// Halaman Riwayat dengan fitur hapus
+class HistoryPage extends StatefulWidget {
   const HistoryPage({super.key});
+  @override State<HistoryPage> createState() => _HistoryPageState();
+}
+
+class _HistoryPageState extends State<HistoryPage> {
+  List<Map<String, dynamic>> history = [];
+  
+  @override
+  void initState() {
+    super.initState();
+    _loadHistory();
+  }
+  
+  Future<void> _loadHistory() async {
+    final p = await SharedPreferences.getInstance();
+    List<String>? saved = p.getStringList('history');
+    if (saved != null) {
+      setState(() {
+        history = saved.map((e) {
+          List<String> parts = e.split('|');
+          return {'title': parts[0], 'episode': parts[1], 'timestamp': parts[2]};
+        }).toList();
+      });
+    }
+  }
+  
+  Future<void> _saveHistory() async {
+    final p = await SharedPreferences.getInstance();
+    List<String> encoded = history.map((e) => '${e['title']}|${e['episode']}|${e['timestamp']}').toList();
+    await p.setStringList('history', encoded);
+  }
+  
+  void _clearAllHistory() async {
+    setState(() => history.clear());
+    await _saveHistory();
+    ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("Semua riwayat dihapus")));
+  }
+  
+  void _removeHistoryItem(int index) async {
+    setState(() => history.removeAt(index));
+    await _saveHistory();
+    ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("Riwayat dihapus")));
+  }
   
   @override
   Widget build(BuildContext context) {
@@ -110,26 +152,92 @@ class HistoryPage extends StatelessWidget {
       appBar: AppBar(
         title: const Text("Riwayat", style: TextStyle(color: Colors.white)),
         backgroundColor: const Color(0xFF1A1A1A),
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.delete_sweep, color: Colors.redAccent),
+            onPressed: history.isEmpty ? null : _clearAllHistory,
+          ),
+        ],
       ),
-      body: const Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(Icons.history, size: 80, color: Colors.grey),
-            SizedBox(height: 20),
-            Text("Belum ada riwayat tontonan", style: TextStyle(color: Colors.grey)),
-            SizedBox(height: 10),
-            Text("Drama yang kamu tonton akan muncul di sini", style: TextStyle(color: Colors.grey, fontSize: 12)),
-          ],
-        ),
-      ),
+      body: history.isEmpty
+        ? const Center(
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Icon(Icons.history, size: 80, color: Colors.grey),
+                SizedBox(height: 20),
+                Text("Belum ada riwayat tontonan", style: TextStyle(color: Colors.grey)),
+                SizedBox(height: 10),
+                Text("Drama yang kamu tonton akan muncul di sini", style: TextStyle(color: Colors.grey, fontSize: 12)),
+              ],
+            ),
+          )
+        : ListView.builder(
+            itemCount: history.length,
+            itemBuilder: (c, i) => Dismissible(
+              key: Key(history[i]['title']),
+              background: Container(color: Colors.red, alignment: Alignment.centerRight, padding: const EdgeInsets.only(right: 20), child: const Icon(Icons.delete, color: Colors.white)),
+              onDismissed: (_) => _removeHistoryItem(i),
+              child: ListTile(
+                leading: const Icon(Icons.play_circle, color: Color(0xFF8B5CF6)),
+                title: Text(history[i]['title'], style: const TextStyle(color: Colors.white)),
+                subtitle: Text("Episode ${history[i]['episode']} • ${history[i]['timestamp']}", style: const TextStyle(color: Colors.grey)),
+                trailing: IconButton(
+                  icon: const Icon(Icons.close, color: Colors.grey),
+                  onPressed: () => _removeHistoryItem(i),
+                ),
+              ),
+            ),
+          ),
     );
   }
 }
 
-// Halaman Favorit
-class FavoritePage extends StatelessWidget {
+// Halaman Favorit dengan fitur hapus
+class FavoritePage extends StatefulWidget {
   const FavoritePage({super.key});
+  @override State<FavoritePage> createState() => _FavoritePageState();
+}
+
+class _FavoritePageState extends State<FavoritePage> {
+  List<Map<String, dynamic>> favorites = [];
+  
+  @override
+  void initState() {
+    super.initState();
+    _loadFavorites();
+  }
+  
+  Future<void> _loadFavorites() async {
+    final p = await SharedPreferences.getInstance();
+    List<String>? saved = p.getStringList('favorites');
+    if (saved != null) {
+      setState(() {
+        favorites = saved.map((e) {
+          List<String> parts = e.split('|');
+          return {'id': parts[0], 'title': parts[1]};
+        }).toList();
+      });
+    }
+  }
+  
+  Future<void> _saveFavorites() async {
+    final p = await SharedPreferences.getInstance();
+    List<String> encoded = favorites.map((e) => '${e['id']}|${e['title']}').toList();
+    await p.setStringList('favorites', encoded);
+  }
+  
+  void _clearAllFavorites() async {
+    setState(() => favorites.clear());
+    await _saveFavorites();
+    ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("Semua favorit dihapus")));
+  }
+  
+  void _removeFavoriteItem(int index) async {
+    setState(() => favorites.removeAt(index));
+    await _saveFavorites();
+    ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("Favorit dihapus")));
+  }
   
   @override
   Widget build(BuildContext context) {
@@ -138,24 +246,47 @@ class FavoritePage extends StatelessWidget {
       appBar: AppBar(
         title: const Text("Favorit", style: TextStyle(color: Colors.white)),
         backgroundColor: const Color(0xFF1A1A1A),
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.delete_sweep, color: Colors.redAccent),
+            onPressed: favorites.isEmpty ? null : _clearAllFavorites,
+          ),
+        ],
       ),
-      body: const Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(Icons.favorite, size: 80, color: Colors.redAccent),
-            SizedBox(height: 20),
-            Text("Belum ada drama favorit", style: TextStyle(color: Colors.grey)),
-            SizedBox(height: 10),
-            Text("Klik ikon hati untuk menambahkan ke favorit", style: TextStyle(color: Colors.grey, fontSize: 12)),
-          ],
-        ),
-      ),
+      body: favorites.isEmpty
+        ? const Center(
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Icon(Icons.favorite, size: 80, color: Colors.redAccent),
+                SizedBox(height: 20),
+                Text("Belum ada drama favorit", style: TextStyle(color: Colors.grey)),
+                SizedBox(height: 10),
+                Text("Klik ikon hati untuk menambahkan ke favorit", style: TextStyle(color: Colors.grey, fontSize: 12)),
+              ],
+            ),
+          )
+        : ListView.builder(
+            itemCount: favorites.length,
+            itemBuilder: (c, i) => Dismissible(
+              key: Key(favorites[i]['id']),
+              background: Container(color: Colors.red, alignment: Alignment.centerRight, padding: const EdgeInsets.only(right: 20), child: const Icon(Icons.delete, color: Colors.white)),
+              onDismissed: (_) => _removeFavoriteItem(i),
+              child: ListTile(
+                leading: const Icon(Icons.favorite, color: Colors.redAccent),
+                title: Text(favorites[i]['title'], style: const TextStyle(color: Colors.white)),
+                trailing: IconButton(
+                  icon: const Icon(Icons.delete_outline, color: Colors.grey),
+                  onPressed: () => _removeFavoriteItem(i),
+                ),
+              ),
+            ),
+          ),
     );
   }
 }
 
-// Halaman Pengaturan
+// SettingsPage dan SourceManager sama seperti sebelumnya...
 class SettingsPage extends StatefulWidget {
   const SettingsPage({super.key});
   @override State<SettingsPage> createState() => _SettingsPageState();
@@ -284,7 +415,6 @@ class _SettingsPageState extends State<SettingsPage> {
   }
 }
 
-// Sumber Data Manager
 class SourceManager extends StatefulWidget {
   const SourceManager({super.key});
   @override State<SourceManager> createState() => _SourceManagerState();

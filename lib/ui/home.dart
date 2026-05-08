@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:shared_preferences/shared_preferences.dart';
-import '../services/drama_api.dart';
+import 'dart:async';
 
 class HomePage extends StatefulWidget {
   const HomePage({super.key});
@@ -8,55 +7,58 @@ class HomePage extends StatefulWidget {
 }
 
 class _HomePageState extends State<HomePage> {
-  List<dynamic> dramas = [];
-  List<dynamic> banners = [];
+  List<Map<String, dynamic>> dramas = [];
   bool isLoading = true;
-  String selectedCategory = 'freereels';
-  int currentBannerIndex = 0;
+  String selectedPlatform = 'freereels';
   
-  final List<Map<String, String>> categories = [
-    {'id': 'freereels', 'name': 'FreeReels', 'icon': '🎬'},
-    {'id': 'melolo', 'name': 'Melolo', 'icon': '🎭'},
+  // Dummy data drama (karena API mungkin expired)
+  final List<Map<String, dynamic>> dummyDramas = [
+    {'id': '1', 'title': 'Menikahi Ayah Mantanku', 'cover': '', 'views': '12.5K', 'chapters': '61', 'status': 'Completed', 'platform': 'freereels'},
+    {'id': '2', 'title': 'Cinta Suami Muda Takkan Padam', 'cover': '', 'views': '154.9K', 'chapters': '53', 'status': 'Completed', 'platform': 'freereels'},
+    {'id': '3', 'title': 'Balas Dendam Ayah', 'cover': '', 'views': '73.9K', 'chapters': '69', 'status': 'Completed', 'platform': 'freereels'},
+    {'id': '4', 'title': 'Istri Masa Depan CEO', 'cover': '', 'views': '45.2K', 'chapters': '48', 'status': 'Ongoing', 'platform': 'freereels'},
+    {'id': '5', 'title': 'Jebakan Sang Taipan', 'cover': '', 'views': '23.8K', 'chapters': '32', 'status': 'Completed', 'platform': 'freereels'},
+    {'id': '6', 'title': 'Hidup Berjaya Anak Terbuang', 'cover': '', 'views': '89.1K', 'chapters': '78', 'status': 'Completed', 'platform': 'freereels'},
+    {'id': '7', 'title': 'Penjalin Hati', 'cover': '', 'views': '34.5K', 'chapters': '45', 'status': 'Ongoing', 'platform': 'freereels'},
+    {'id': '8', 'title': 'Sang Master Judi Sejati', 'cover': '', 'views': '67.8K', 'chapters': '82', 'status': 'Completed', 'platform': 'freereels'},
+    {'id': '9', 'title': 'Cinta di Balik Warisan', 'cover': '', 'views': '28.9K', 'chapters': '41', 'status': 'Completed', 'platform': 'freereels'},
+    {'id': '10', 'title': 'Merebut Kembali Takdir', 'cover': '', 'views': '58.2K', 'chapters': '61', 'status': 'Completed', 'platform': 'melolo'},
+    {'id': '11', 'title': 'Drama Melolo 1', 'cover': '', 'views': '12.3K', 'chapters': '30', 'status': 'Completed', 'platform': 'melolo'},
+    {'id': '12', 'title': 'Drama Melolo 2', 'cover': '', 'views': '8.7K', 'chapters': '25', 'status': 'Ongoing', 'platform': 'melolo'},
   ];
   
   @override
   void initState() { 
     super.initState(); 
-    _fetchData();
+    _loadDramas();
   }
   
-  Future<void> _fetchData() async {
+  Future<void> _loadDramas() async {
     setState(() => isLoading = true);
-    await Future.wait([
-      _fetchDramas(),
-      _fetchBanners(),
-    ]);
-    setState(() => isLoading = false);
-  }
-  
-  Future<void> _fetchDramas() async {
-    dramas = await DramaAPI.getHome(selectedCategory, 'id');
-  }
-  
-  Future<void> _fetchBanners() async {
-    // Banner bisa dari API atau dummy
-    banners = [
-      {'title': 'Menikahi Ayah Mantanku', 'image': ''},
-      {'title': 'Cinta Suami Muda', 'image': ''},
-    ];
-  }
-  
-  void _changeCategory(String categoryId) async {
+    await Future.delayed(const Duration(milliseconds: 500)); // Simulasi loading
     setState(() {
-      selectedCategory = categoryId;
+      dramas = dummyDramas.where((d) => 
+        (selectedPlatform == 'freereels' && d['platform'] == 'freereels') ||
+        (selectedPlatform == 'melolo' && d['platform'] == 'melolo')
+      ).toList();
+      isLoading = false;
+    });
+  }
+  
+  void _changePlatform(String platform) {
+    setState(() {
+      selectedPlatform = platform;
       isLoading = true;
     });
-    await _fetchDramas();
-    setState(() => isLoading = false);
+    _loadDramas();
   }
 
   @override
   Widget build(BuildContext context) {
+    // Deteksi apakah Android TV atau HP
+    bool isAndroidTV = MediaQuery.of(context).size.width > 900;
+    int crossAxisCount = isAndroidTV ? 7 : 4;
+    
     return Scaffold(
       backgroundColor: const Color(0xFF0A0A0A),
       appBar: AppBar(
@@ -80,13 +82,15 @@ class _HomePageState extends State<HomePage> {
           IconButton(
             icon: const Icon(Icons.search, color: Colors.white),
             onPressed: () {
-              Navigator.push(context, MaterialPageRoute(builder: (c) => const SearchPage()));
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(content: Text("Fitur pencarian segera hadir"))
+              );
             },
           ),
         ],
       ),
       body: RefreshIndicator(
-        onRefresh: _fetchData,
+        onRefresh: _loadDramas,
         child: isLoading
           ? const Center(child: CircularProgressIndicator(color: Color(0xFF8B5CF6)))
           : SingleChildScrollView(
@@ -94,55 +98,36 @@ class _HomePageState extends State<HomePage> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  // Banner Carousel
-                  if (banners.isNotEmpty)
-                    SizedBox(
-                      height: 200,
-                      child: PageView.builder(
-                        itemCount: banners.length,
-                        onPageChanged: (index) => setState(() => currentBannerIndex = index),
-                        itemBuilder: (ctx, i) => Container(
-                          margin: const EdgeInsets.symmetric(horizontal: 15),
-                          decoration: BoxDecoration(
-                            borderRadius: BorderRadius.circular(20),
-                            gradient: const LinearGradient(
-                              begin: Alignment.topLeft,
-                              end: Alignment.bottomRight,
-                              colors: [Color(0xFF8B5CF6), Color(0xFF6366F1)],
-                            ),
-                          ),
-                          child: Center(
-                            child: Text(
-                              banners[i]['title'],
-                              style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.white),
-                            ),
-                          ),
-                        ),
+                  // Banner
+                  Container(
+                    height: 180,
+                    margin: const EdgeInsets.all(15),
+                    decoration: BoxDecoration(
+                      borderRadius: BorderRadius.circular(20),
+                      gradient: const LinearGradient(
+                        begin: Alignment.topLeft,
+                        end: Alignment.bottomRight,
+                        colors: [Color(0xFF8B5CF6), Color(0xFF6366F1)],
                       ),
                     ),
+                    child: const Center(
+                      child: Text(
+                        "Menikahi Ayah Mantanku",
+                        style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.white),
+                      ),
+                    ),
+                  ),
                   
-                  // Category Chips
-                  const SizedBox(height: 20),
+                  // Platform Chips
                   Padding(
                     padding: const EdgeInsets.symmetric(horizontal: 15),
                     child: Row(
                       children: [
                         const Text("Platform", style: TextStyle(color: Colors.grey, fontSize: 12)),
                         const SizedBox(width: 10),
-                        ...categories.map((cat) => Padding(
-                          padding: const EdgeInsets.only(right: 10),
-                          child: FilterChip(
-                            label: Text("${cat['icon']} ${cat['name']}"),
-                            selected: selectedCategory == cat['id'],
-                            onSelected: (_) => _changeCategory(cat['id']!),
-                            backgroundColor: const Color(0xFF1A1A1A),
-                            selectedColor: const Color(0xFF8B5CF6),
-                            labelStyle: TextStyle(
-                              color: selectedCategory == cat['id'] ? Colors.white : Colors.grey,
-                              fontSize: 12,
-                            ),
-                          ),
-                        )),
+                        _buildPlatformChip("FreeReels", "freereels"),
+                        const SizedBox(width: 8),
+                        _buildPlatformChip("Melolo", "melolo"),
                       ],
                     ),
                   ),
@@ -155,7 +140,7 @@ class _HomePageState extends State<HomePage> {
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
                         Text(
-                          "🔥 ${selectedCategory == 'freereels' ? 'FreeReels' : 'Melolo'} Pilihan",
+                          "🔥 ${selectedPlatform == 'freereels' ? 'FreeReels' : 'Melolo'} Pilihan",
                           style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.white),
                         ),
                         TextButton(
@@ -166,7 +151,7 @@ class _HomePageState extends State<HomePage> {
                     ),
                   ),
                   
-                  // Drama Grid
+                  // Drama Grid - Responsive
                   dramas.isEmpty
                     ? const Padding(
                         padding: EdgeInsets.all(50),
@@ -176,14 +161,14 @@ class _HomePageState extends State<HomePage> {
                         shrinkWrap: true,
                         physics: const NeverScrollableScrollPhysics(),
                         padding: const EdgeInsets.all(15),
-                        gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                          crossAxisCount: 2,
-                          childAspectRatio: 0.65,
+                        gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+                          crossAxisCount: crossAxisCount,
+                          childAspectRatio: 0.7,
                           crossAxisSpacing: 12,
                           mainAxisSpacing: 12,
                         ),
-                        itemCount: dramas.length > 10 ? 10 : dramas.length,
-                        itemBuilder: (c, i) => _buildDramaCard(dramas[i]),
+                        itemCount: dramas.length,
+                        itemBuilder: (c, i) => _buildDramaCard(dramas[i], isAndroidTV),
                       ),
                   
                   const SizedBox(height: 80),
@@ -194,11 +179,25 @@ class _HomePageState extends State<HomePage> {
     );
   }
   
-  Widget _buildDramaCard(dynamic drama) {
+  Widget _buildPlatformChip(String label, String platform) {
+    return FilterChip(
+      label: Text(label),
+      selected: selectedPlatform == platform,
+      onSelected: (_) => _changePlatform(platform),
+      backgroundColor: const Color(0xFF1A1A1A),
+      selectedColor: const Color(0xFF8B5CF6),
+      labelStyle: TextStyle(
+        color: selectedPlatform == platform ? Colors.white : Colors.grey,
+        fontSize: 12,
+      ),
+    );
+  }
+  
+  Widget _buildDramaCard(Map<String, dynamic> drama, bool isAndroidTV) {
     return GestureDetector(
       onTap: () {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(drama['title'] ?? 'Drama'), duration: const Duration(seconds: 1))
+          SnackBar(content: Text(drama['title']), duration: const Duration(seconds: 1))
         );
       },
       child: Container(
@@ -216,16 +215,11 @@ class _HomePageState extends State<HomePage> {
               ),
               child: Stack(
                 children: [
-                  Image.network(
-                    drama['cover'] ?? '',
-                    height: 160,
+                  Container(
+                    height: isAndroidTV ? 130 : 140,
                     width: double.infinity,
-                    fit: BoxFit.cover,
-                    errorBuilder: (_, __, ___) => Container(
-                      height: 160,
-                      color: const Color(0xFF2A2A2A),
-                      child: const Icon(Icons.movie, color: Colors.grey, size: 40),
-                    ),
+                    color: const Color(0xFF2A2A2A),
+                    child: const Icon(Icons.movie, color: Colors.grey, size: 40),
                   ),
                   Positioned(
                     bottom: 8,
@@ -241,7 +235,7 @@ class _HomePageState extends State<HomePage> {
                         children: [
                           const Icon(Icons.visibility, size: 10, color: Colors.white),
                           const SizedBox(width: 2),
-                          Text(_formatViews(drama['views']), style: const TextStyle(fontSize: 9, color: Colors.white)),
+                          Text(drama['views'], style: const TextStyle(fontSize: 9, color: Colors.white)),
                         ],
                       ),
                     ),
@@ -250,13 +244,13 @@ class _HomePageState extends State<HomePage> {
               ),
             ),
             Padding(
-              padding: const EdgeInsets.all(10),
+              padding: const EdgeInsets.all(8),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    drama['title'] ?? 'No Title',
-                    style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: Colors.white),
+                    drama['title'],
+                    style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: Colors.white),
                     maxLines: 2,
                     overflow: TextOverflow.ellipsis,
                   ),
@@ -270,12 +264,12 @@ class _HomePageState extends State<HomePage> {
                           borderRadius: BorderRadius.circular(4),
                         ),
                         child: Text(
-                          "${drama['chapters'] ?? 0} eps",
+                          "${drama['chapters']} eps",
                           style: const TextStyle(fontSize: 9, color: Color(0xFF8B5CF6)),
                         ),
                       ),
-                      const SizedBox(width: 6),
-                      if (drama['status'] == 'Completed')
+                      if (drama['status'] == 'Completed') ...[
+                        const SizedBox(width: 6),
                         Container(
                           padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
                           decoration: BoxDecoration(
@@ -284,6 +278,7 @@ class _HomePageState extends State<HomePage> {
                           ),
                           child: const Text("Selesai", style: TextStyle(fontSize: 9, color: Colors.green)),
                         ),
+                      ],
                     ],
                   ),
                 ],
@@ -291,123 +286,6 @@ class _HomePageState extends State<HomePage> {
             ),
           ],
         ),
-      ),
-    );
-  }
-  
-  String _formatViews(dynamic views) {
-    if (views == null) return '0';
-    String v = views.toString();
-    if (v.contains('M')) return v;
-    if (v.length > 6) return '${(int.parse(v) / 1000000).toStringAsFixed(1)}M';
-    if (v.length > 3) return '${(int.parse(v) / 1000).toStringAsFixed(0)}K';
-    return v;
-  }
-}
-
-// Search Page
-class SearchPage extends StatefulWidget {
-  const SearchPage({super.key});
-  @override State<SearchPage> createState() => _SearchPageState();
-}
-
-class _SearchPageState extends State<SearchPage> {
-  final TextEditingController _controller = TextEditingController();
-  List<dynamic> results = [];
-  bool isLoading = false;
-  String selectedCategory = 'freereels';
-  
-  final List<Map<String, String>> categories = [
-    {'id': 'freereels', 'name': 'FreeReels'},
-    {'id': 'melolo', 'name': 'Melolo'},
-  ];
-  
-  Future<void> _search() async {
-    if (_controller.text.isEmpty) return;
-    setState(() => isLoading = true);
-    results = await DramaAPI.search(selectedCategory, _controller.text, 'id');
-    setState(() => isLoading = false);
-  }
-  
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: const Color(0xFF0A0A0A),
-      appBar: AppBar(
-        backgroundColor: Colors.transparent,
-        elevation: 0,
-        title: TextField(
-          controller: _controller,
-          autofocus: true,
-          style: const TextStyle(color: Colors.white),
-          onSubmitted: (_) => _search(),
-          decoration: InputDecoration(
-            hintText: "Cari judul drama...",
-            hintStyle: const TextStyle(color: Colors.grey),
-            border: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(30),
-              borderSide: BorderSide.none,
-            ),
-            filled: true,
-            fillColor: const Color(0xFF1A1A1A),
-            prefixIcon: const Icon(Icons.search, color: Colors.grey),
-          ),
-        ),
-      ),
-      body: Column(
-        children: [
-          Padding(
-            padding: const EdgeInsets.all(15),
-            child: Row(
-              children: [
-                const Text("Cari di: ", style: TextStyle(color: Colors.white70)),
-                ...categories.map((cat) => Padding(
-                  padding: const EdgeInsets.only(right: 10),
-                  child: FilterChip(
-                    label: Text(cat['name']!),
-                    selected: selectedCategory == cat['id'],
-                    onSelected: (_) {
-                      setState(() {
-                        selectedCategory = cat['id']!;
-                        results = [];
-                      });
-                    },
-                    backgroundColor: const Color(0xFF1A1A1A),
-                    selectedColor: const Color(0xFF8B5CF6),
-                  ),
-                )),
-              ],
-            ),
-          ),
-          Expanded(
-            child: isLoading
-              ? const Center(child: CircularProgressIndicator(color: Color(0xFF8B5CF6)))
-              : results.isEmpty
-                ? const Center(child: Text("Ketik judul drama yang ingin dicari", style: TextStyle(color: Colors.grey)))
-                : ListView.builder(
-                    itemCount: results.length,
-                    itemBuilder: (c, i) => ListTile(
-                      leading: ClipRRect(
-                        borderRadius: BorderRadius.circular(8),
-                        child: Image.network(
-                          results[i]['cover'] ?? '',
-                          width: 50,
-                          height: 70,
-                          fit: BoxFit.cover,
-                          errorBuilder: (_, __, ___) => Container(width: 50, height: 70, color: const Color(0xFF1A1A1A), child: const Icon(Icons.movie)),
-                        ),
-                      ),
-                      title: Text(results[i]['title'] ?? '', style: const TextStyle(color: Colors.white)),
-                      subtitle: Text("${results[i]['views'] ?? 0} views • ${results[i]['chapters'] ?? 0} eps", style: const TextStyle(color: Colors.grey)),
-                      onTap: () {
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          SnackBar(content: Text(results[i]['title'] ?? 'Drama'))
-                        );
-                      },
-                    ),
-                  ),
-          ),
-        ],
       ),
     );
   }
