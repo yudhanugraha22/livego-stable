@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-
 class TVButton extends StatefulWidget {
   final Widget child;
   final VoidCallback onTap;
@@ -8,7 +7,6 @@ class TVButton extends StatefulWidget {
   @override
   State<TVButton> createState() => _TVButtonState();
 }
-
 class _TVButtonState extends State<TVButton> {
   bool _isFocused = false;
   @override
@@ -21,10 +19,10 @@ class _TVButtonState extends State<TVButton> {
           duration: const Duration(milliseconds: 150),
           decoration: BoxDecoration(
             borderRadius: BorderRadius.circular(widget.borderRadius),
-            border: Border.all(color: _isFocused ? Colors.blueAccent : Colors.transparent, width: 3.5),
-            boxShadow: _isFocused ? [BoxShadow(color: Colors.blueAccent.withOpacity(0.8), blurRadius: 20, spreadRadius: 3)] : [],
+            border: Border.all(color: _isFocused ? Colors.blueAccent : Colors.transparent, width: 3.0),
+            boxShadow: _isFocused ? [BoxShadow(color: Colors.blueAccent.withOpacity(0.7), blurRadius: 15, spreadRadius: 2)] : [],
           ),
-          transform: _isFocused ? (Matrix4.identity()..scale(1.05)) : Matrix4.identity(),
+          transform: _isFocused ? (Matrix4.identity()..scale(1.04)) : Matrix4.identity(),
           child: widget.child,
         ),
       ),
