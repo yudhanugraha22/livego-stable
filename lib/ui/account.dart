@@ -71,7 +71,7 @@ class SourceManager extends StatefulWidget {
   @override State<SourceManager> createState() => _SourceManagerState();
 }
 class _SourceManagerState extends State<SourceManager> {
-  Map<String, bool> s = {"Melolo":true,"DramaBox":true,"DotDrama":true,"Netshort":true,"Stardusttv":true,"Reelife":true,"DramaBite":true,"Velolo":true};
+  Map<String, bool> s = {"Melolo":true,"DramaBox":true,"DotDrama":true,"Netshort":true,"Stardusttv":true,"Reelife":true,"DramaBite":true,"FreeReels":true};
   @override void initState() { super.initState(); _load(); }
   _load() async {
     final p = await SharedPreferences.getInstance();
