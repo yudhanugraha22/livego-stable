@@ -47,13 +47,13 @@ class _TVButtonState extends State<TVButton> {
             borderRadius: BorderRadius.circular(widget.borderRadius),
             border: Border.all(
               color: _isFocused ? Colors.blueAccent : Colors.transparent, 
-              width: 3.0,
+              width: 3.5,
             ),
             boxShadow: _isFocused ? [
-              BoxShadow(color: Colors.blueAccent.withOpacity(0.7), blurRadius: 15, spreadRadius: 2)
+              BoxShadow(color: Colors.blueAccent.withOpacity(0.8), blurRadius: 20, spreadRadius: 3)
             ] : [],
           ),
-          transform: _isFocused ? (Matrix4.identity()..scale(1.04)) : Matrix4.identity(),
+          transform: _isFocused ? (Matrix4.identity()..scale(1.05)) : Matrix4.identity(),
           child: widget.child,
         ),
       ),
@@ -62,7 +62,7 @@ class _TVButtonState extends State<TVButton> {
 }
 
 // ==========================================
-// NAVIGASI UTAMA
+// NAVIGASI UTAMA & FITUR EXIT (HAPUS CACHE)
 // ==========================================
 class MainNavigation extends StatefulWidget {
   const MainNavigation({super.key});
@@ -75,9 +75,11 @@ class _MainNavigationState extends State<MainNavigation> {
   final List<Widget> _pages = [const HomePage(), const Center(child: Text("Halaman Unduhan")), const AccountPage()];
 
   Future<void> _clearCacheAndExit() async {
-    final cacheDir = await getTemporaryDirectory();
-    if (cacheDir.existsSync()) { cacheDir.deleteSync(recursive: true); }
-    SystemNavigator.pop();
+    try {
+      final cacheDir = await getTemporaryDirectory();
+      if (cacheDir.existsSync()) { cacheDir.deleteSync(recursive: true); }
+      SystemNavigator.pop();
+    } catch (e) { SystemNavigator.pop(); }
   }
 
   Future<bool> _showExitDialog() async {
@@ -85,11 +87,16 @@ class _MainNavigationState extends State<MainNavigation> {
       context: context,
       builder: (context) => AlertDialog(
         backgroundColor: const Color(0xFF161B22),
-        title: const Text("Keluar", style: TextStyle(color: Colors.blueAccent)),
-        content: const Text("Keluar dan bersihkan cache?"),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        title: const Text("Keluar Aplikasi", style: TextStyle(color: Colors.blueAccent, fontWeight: FontWeight.bold)),
+        content: const Text("Yakin ingin keluar dan bersihkan cache?"),
         actions: [
-          TextButton(onPressed: () => Navigator.pop(context, false), child: const Text("Batal")),
-          ElevatedButton(onPressed: _clearCacheAndExit, style: ElevatedButton.styleFrom(backgroundColor: Colors.red), child: const Text("Keluar")),
+          TextButton(onPressed: () => Navigator.of(context).pop(false), child: const Text("Batal")),
+          ElevatedButton(
+            style: ElevatedButton.styleFrom(backgroundColor: Colors.redAccent),
+            onPressed: () => _clearCacheAndExit(), 
+            child: const Text("Ya, Keluar")
+          ),
         ],
       ),
     ) ?? false;
@@ -99,7 +106,7 @@ class _MainNavigationState extends State<MainNavigation> {
   Widget build(BuildContext context) {
     return PopScope(
       canPop: false,
-      onPopInvoked: (did) { if(!did) _showExitDialog(); },
+      onPopInvoked: (didPop) { if (!didPop) _showExitDialog(); },
       child: Scaffold(
         body: IndexedStack(index: _currentIndex, children: _pages),
         bottomNavigationBar: BottomNavigationBar(
@@ -110,7 +117,7 @@ class _MainNavigationState extends State<MainNavigation> {
           type: BottomNavigationBarType.fixed,
           items: const [
             BottomNavigationBarItem(icon: Icon(Icons.home_filled), label: "HOME"),
-            BottomNavigationBarItem(icon: Icon(Icons.download), label: "UNDUHAN"),
+            BottomNavigationBarItem(icon: Icon(Icons.download_rounded), label: "UNDUHAN"),
             BottomNavigationBarItem(icon: Icon(Icons.person_rounded), label: "AKUN"),
           ],
         ),
@@ -120,51 +127,130 @@ class _MainNavigationState extends State<MainNavigation> {
 }
 
 // ==========================================
-// HALAMAN BERANDA (GRID 7x2 TV)
+// HALAMAN HOME (KEMBALI KE GAYA BUILD #18)
 // ==========================================
-class HomePage extends StatelessWidget {
+class HomePage extends StatefulWidget {
   const HomePage({super.key});
+  @override
+  State<HomePage> createState() => _HomePageState();
+}
+
+class _HomePageState extends State<HomePage> {
+  final List<String> sources = ["Melolo", "DramaBox", "DotDrama", "Netshort", "Stardusttv", "Reelife", "DramaBite", "Velolo"];
+  final List<String> cats = ["Populer", "New", "Segera Hadir", "Dubbing", "Trend"];
+  String selSource = "Melolo";
+  String selCat = "Populer";
+
   @override
   Widget build(BuildContext context) {
     bool isTV = MediaQuery.of(context).size.width > 900;
+
     return Scaffold(
-      appBar: AppBar(backgroundColor: const Color(0xFF161B22), title: const Text("Livego")),
+      appBar: AppBar(
+        backgroundColor: const Color(0xFF161B22),
+        elevation: 0,
+        title: const Text("Livego", style: TextStyle(fontWeight: FontWeight.bold, color: Colors.blueAccent)),
+        actions: [
+          IconButton(icon: const Icon(Icons.history), onPressed: () {}),
+          IconButton(icon: const Icon(Icons.favorite_border), onPressed: () {}),
+          IconButton(icon: const Icon(Icons.search), onPressed: () {}),
+        ],
+      ),
       body: SingleChildScrollView(
         child: Column(
           children: [
             const SizedBox(height: 15),
-            _buildBanner(),
+            _buildBanner(), // Banner Build #18
             const SizedBox(height: 15),
-            _buildGrid(isTV),
+            _buildHList(sources, selSource, (v) => setState(() => selSource = v), const Color(0xFF8B5CF6)), // Baris API (Ungu)
+            const SizedBox(height: 10),
+            _buildHList(cats, selCat, (v) => setState(() => selCat = v), Colors.blueAccent), // Baris Kategori (Biru)
+            const SizedBox(height: 15),
+            _buildMovieGrid(isTV),
           ],
         ),
       ),
     );
   }
 
-  Widget _buildBanner() => Container(
-    height: 180, margin: const EdgeInsets.symmetric(horizontal: 15),
-    decoration: BoxDecoration(borderRadius: BorderRadius.circular(20), color: Colors.white10),
-    alignment: Alignment.center, child: const Text("BANNER CINEFLOW STYLE"),
-  );
+  Widget _buildBanner() {
+    return Container(
+      margin: const EdgeInsets.symmetric(horizontal: 15),
+      child: TVButton(
+        onTap: () {},
+        child: Container(
+          height: 170, width: double.infinity,
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(20),
+            image: const DecorationImage(image: NetworkImage("https://via.placeholder.com/600x300/1e293b/ffffff?text=Promo+Drama"), fit: BoxFit.cover),
+          ),
+          child: Container(
+            padding: const EdgeInsets.all(15),
+            decoration: BoxDecoration(borderRadius: BorderRadius.circular(20), gradient: const LinearGradient(begin: Alignment.bottomCenter, colors: [Colors.black, Colors.transparent])),
+            alignment: Alignment.bottomLeft,
+            child: Text("Drama Terpopuler di $selSource", style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
+          ),
+        ),
+      ),
+    );
+  }
 
-  Widget _buildGrid(bool isTV) => GridView.builder(
-    shrinkWrap: true, physics: const NeverScrollableScrollPhysics(),
-    padding: const EdgeInsets.all(15),
-    gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-      crossAxisCount: isTV ? 7 : 4, childAspectRatio: 0.65, crossAxisSpacing: 10, mainAxisSpacing: 10
-    ),
-    itemCount: isTV ? 14 : 12,
-    itemBuilder: (c, i) => TVButton(onTap: (){}, child: Container(decoration: BoxDecoration(color: Colors.white10, borderRadius: BorderRadius.circular(10)))),
-  );
+  Widget _buildHList(List list, String sel, Function(String) onSel, Color color) {
+    return SizedBox(
+      height: 40,
+      child: ListView.builder(
+        scrollDirection: Axis.horizontal, padding: const EdgeInsets.symmetric(horizontal: 15),
+        itemCount: list.length,
+        itemBuilder: (c, i) => Padding(
+          padding: const EdgeInsets.only(right: 8),
+          child: TVButton(
+            borderRadius: 20,
+            onTap: () => onSel(list[i]),
+            child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 20), alignment: Alignment.center,
+              decoration: BoxDecoration(color: sel == list[i] ? color : Colors.white10, borderRadius: BorderRadius.circular(20)),
+              child: Text(list[i], style: const TextStyle(fontSize: 12)),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildMovieGrid(bool isTV) {
+    return GridView.builder(
+      shrinkWrap: true, physics: const NeverScrollableScrollPhysics(),
+      padding: const EdgeInsets.all(15),
+      gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+        crossAxisCount: isTV ? 7 : 4, childAspectRatio: 0.65, crossAxisSpacing: 10, mainAxisSpacing: 10,
+      ),
+      itemCount: isTV ? 14 : 12,
+      itemBuilder: (c, i) => Column(
+        children: [
+          Expanded(
+            child: TVButton(
+              onTap: () {},
+              child: Container(
+                decoration: BoxDecoration(
+                  color: Colors.white10, borderRadius: BorderRadius.circular(12),
+                ),
+                child: const Center(child: Icon(Icons.play_arrow_rounded, color: Colors.white10, size: 30)),
+              ),
+            ),
+          ),
+          const SizedBox(height: 5),
+          const Text("Judul Film...", style: TextStyle(fontSize: 10), maxLines: 1),
+        ],
+      ),
+    );
+  }
 }
 
 // ==========================================
-// HALAMAN AKUN (IDENTIK CINEFLOW)
+// HALAMAN AKUN (PATEN BUILD #19 STYLE)
 // ==========================================
 class AccountPage extends StatelessWidget {
   const AccountPage({super.key});
-
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -174,22 +260,19 @@ class AccountPage extends StatelessWidget {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             const SizedBox(height: 50),
-            _buildCineFlowHeader(),
+            _buildCineHeader(),
             const SizedBox(height: 25),
             _buildSectionLabel("KOLEKSI CEPAT"),
-            _buildCineCard([
-              _cineItem(context, Icons.history, "Riwayat", "Lanjutkan dari tontonan terakhir", () {}),
-              _cineItem(context, Icons.favorite_border, "Favorit", "Buka daftar judul favorit Anda", () {}),
-              _cineItem(context, Icons.settings_outlined, "Pengaturan", "Atur tampilan, player, dan source", () {
-                Navigator.push(context, MaterialPageRoute(builder: (c) => const SettingsPage()));
-              }),
+            _buildMenuCard([
+              _cineItem(context, Icons.history, "Riwayat", "Lanjutkan dari tontonan terakhir"),
+              _cineItem(context, Icons.favorite_border, "Favorit", "Drama yang Anda simpan"),
+              _cineItem(context, Icons.settings_outlined, "Pengaturan", "Atur Player, DRM, & Sumber Data", isSettings: true),
             ]),
             const SizedBox(height: 25),
-            _buildSectionLabel("APLIKASI & DUKUNGAN"),
-            _buildCineCard([
-              _cineItem(context, Icons.system_update_alt, "Periksa Pembaruan", "Cek versi terbaru Livego", () {}),
-              _cineItem(context, Icons.share, "Dukung Livego", "Bantu maintenance lewat donasi", () {}),
-              _cineItem(context, Icons.feedback_outlined, "Kirim Feedback", "Laporkan bug atau masalah", () {}),
+            _buildSectionLabel("DUKUNGAN"),
+            _buildMenuCard([
+              _cineItem(context, Icons.system_update, "Periksa Pembaruan", "Versi 1.0.0"),
+              _cineItem(context, Icons.share, "Dukung Livego", "Donasi maintenance"),
             ]),
           ],
         ),
@@ -197,63 +280,48 @@ class AccountPage extends StatelessWidget {
     );
   }
 
-  Widget _buildCineFlowHeader() {
+  Widget _buildCineHeader() {
     return Container(
       padding: const EdgeInsets.all(20),
-      decoration: BoxDecoration(borderRadius: BorderRadius.circular(25), color: const Color(0xFF161B22)),
-      child: Column(
-        children: [
-          Row(
-            children: [
-              const CircleAvatar(radius: 35, backgroundColor: Color(0xFF8B5CF6), child: Icon(Icons.play_arrow, size: 40, color: Colors.white)),
-              const SizedBox(width: 15),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    const Text("User Penggemar", style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
-                    Text("Akun CineFlow", style: TextStyle(color: Colors.white.withOpacity(0.5), fontSize: 13)),
-                  ],
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 20),
-          Row(
-            children: [
-              _socialBtn("Telegram", Colors.blue),
-              const SizedBox(width: 10),
-              _socialBtn("WhatsApp", Colors.green),
-            ],
-          )
-        ],
-      ),
+      decoration: BoxDecoration(color: const Color(0xFF161B22), borderRadius: BorderRadius.circular(25)),
+      child: Column(children: [
+        Row(children: [
+          const CircleAvatar(radius: 35, backgroundColor: Color(0xFF8B5CF6), child: Icon(Icons.play_arrow, size: 40, color: Colors.white)),
+          const SizedBox(width: 15),
+          const Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+            Text("User Penggemar", style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
+            Text("Akun CineFlow", style: TextStyle(color: Colors.grey, fontSize: 13)),
+          ]),
+        ]),
+        const SizedBox(height: 15),
+        Row(children: [ _socialBtn("Telegram"), const SizedBox(width: 10), _socialBtn("WhatsApp") ])
+      ]),
     );
   }
 
-  Widget _socialBtn(String t, Color c) => Container(
-    padding: const EdgeInsets.symmetric(horizontal: 15, vertical: 8),
-    decoration: BoxDecoration(borderRadius: BorderRadius.circular(10), color: Colors.white10),
-    child: Text(t, style: const TextStyle(fontSize: 12)),
-  );
+  Widget _socialBtn(String t) => Container(padding: const EdgeInsets.symmetric(horizontal: 15, vertical: 8), decoration: BoxDecoration(borderRadius: BorderRadius.circular(10), color: Colors.white10), child: Text(t, style: const TextStyle(fontSize: 12)));
 
   Widget _buildSectionLabel(String t) => Padding(padding: const EdgeInsets.only(left: 10, bottom: 10), child: Text(t, style: const TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: Colors.grey)));
 
-  Widget _buildCineCard(List<Widget> items) => Container(decoration: BoxDecoration(color: const Color(0xFF161B22), borderRadius: BorderRadius.circular(20)), child: Column(children: items));
+  Widget _buildMenuCard(List<Widget> items) => Container(decoration: BoxDecoration(color: const Color(0xFF161B22), borderRadius: BorderRadius.circular(20)), child: Column(children: items));
 
-  Widget _cineItem(BuildContext ctx, IconData i, String t, String s, VoidCallback click) => TVButton(
-    onTap: click,
-    child: ListTile(
-      leading: Container(padding: const EdgeInsets.all(8), decoration: const BoxDecoration(color: Colors.white10, shape: BoxShape.circle), child: Icon(i, size: 20)),
-      title: Text(t, style: const TextStyle(fontSize: 14, fontWeight: FontWeight.bold)),
-      subtitle: Text(s, style: const TextStyle(fontSize: 11, color: Colors.grey)),
-      trailing: const Icon(Icons.chevron_right, size: 18),
-    ),
-  );
+  Widget _cineItem(BuildContext ctx, IconData i, String t, String s, {bool isSettings = false}) {
+    return TVButton(
+      onTap: () {
+        if (isSettings) Navigator.push(ctx, MaterialPageRoute(builder: (c) => const SettingsPage()));
+      },
+      child: ListTile(
+        leading: Container(padding: const EdgeInsets.all(8), decoration: const BoxDecoration(color: Colors.white10, shape: BoxShape.circle), child: Icon(i, size: 20)),
+        title: Text(t, style: const TextStyle(fontSize: 14, fontWeight: FontWeight.bold)),
+        subtitle: Text(s, style: const TextStyle(fontSize: 11, color: Colors.grey)),
+        trailing: const Icon(Icons.chevron_right, size: 18),
+      ),
+    );
+  }
 }
 
 // ==========================================
-// HALAMAN PENGATURAN (DETAIIL CINEFLOW)
+// HALAMAN PENGATURAN & KELOLA DATA
 // ==========================================
 class SettingsPage extends StatefulWidget {
   const SettingsPage({super.key});
@@ -262,99 +330,55 @@ class SettingsPage extends StatefulWidget {
 }
 
 class _SettingsPageState extends State<SettingsPage> {
-  bool bgPoster = false;
-  bool cachePlay = true;
-  bool rotasi = true;
   String drm = "AUTO";
-
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(backgroundColor: const Color(0xFF0D1117), title: const Text("Pengaturan Livego")),
+      appBar: AppBar(title: const Text("Pengaturan Livego"), backgroundColor: const Color(0xFF161B22)),
       body: ListView(
         padding: const EdgeInsets.all(15),
         children: [
-          _group("TAMPILAN & NAVIGASI", [
-            _tile(Icons.settings_suggest, "Otomatis (Ikuti Hardware)", trailing: const Icon(Icons.radio_button_checked, color: Colors.blueAccent)),
+          _buildGroup("PLAYER", [
+            _tile(Icons.lock_person, "Widevine DRM", sub: drm, onTap: _showDRM),
+            _tile(Icons.cached, "Gunakan Cache Playback", trailing: Icon(Icons.toggle_on, color: Colors.blueAccent)),
           ]),
           const SizedBox(height: 20),
-          _group("PLAYER", [
-            _switch(Icons.image_outlined, "Tampilkan Background Poster", bgPoster, (v)=>setState(()=>bgPoster=v)),
-            _switch(Icons.cached, "Gunakan Cache Playback", cachePlay, (v)=>setState(()=>cachePlay=v)),
-            _switch(Icons.screen_rotation, "Tampilkan Tombol Rotasi", rotasi, (v)=>setState(()=>rotasi=v)),
-            _tile(Icons.lock_outline, "Kompatibilitas Widevine DRM", sub: drm),
-          ]),
-          const SizedBox(height: 20),
-          _group("SUMBER & IZIN", [
-            _tile(Icons.layers_outlined, "Kelola Sumber Data", sub: "Aktifkan hanya source yang ingin muncul", onTap: () {
-              Navigator.push(context, MaterialPageRoute(builder: (c) => const SourceManagerPage()));
+          _buildGroup("SUMBER & IZIN", [
+            _tile(Icons.layers, "Kelola Sumber Data", sub: "Aktifkan 8 API Dracin", onTap: () {
+              Navigator.push(context, MaterialPageRoute(builder: (c) => const SourceManager()));
             }),
-          ]),
-          const SizedBox(height: 20),
-          _group("PERAWATAN", [
-            _tile(Icons.delete_sweep_outlined, "Hapus Semua Cache", color: Colors.redAccent),
           ]),
         ],
       ),
     );
   }
 
-  Widget _group(String t, List<Widget> c) => Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-    Padding(padding: const EdgeInsets.only(left: 10, bottom: 10), child: Text(t, style: const TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: Colors.grey))),
+  void _showDRM() {
+    showDialog(context: context, builder: (c) => AlertDialog(
+      title: const Text("Mode DRM"), backgroundColor: const Color(0xFF161B22),
+      content: Column(mainAxisSize: MainAxisSize.min, children: ["Auto", "Paksa L1", "Paksa L3"].map((v) => RadioListTile(title: Text(v), value: v, groupValue: drm, onChanged: (val) { setState(() => drm = val.toString()); Navigator.pop(context); })).toList()),
+    ));
+  }
+
+  Widget _buildGroup(String t, List<Widget> c) => Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+    Padding(padding: const EdgeInsets.only(left: 10, bottom: 8), child: Text(t, style: const TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: Colors.grey))),
     Container(decoration: BoxDecoration(color: const Color(0xFF161B22), borderRadius: BorderRadius.circular(15)), child: Column(children: c)),
   ]);
 
-  Widget _tile(IconData i, String t, {String? sub, Widget? trailing, VoidCallback? onTap, Color? color}) => TVButton(
-    onTap: onTap ?? (){},
-    child: ListTile(
-      leading: Icon(i, color: color ?? Colors.white70),
-      title: Text(t, style: TextStyle(fontSize: 14, color: color)),
-      subtitle: sub != null ? Text(sub, style: const TextStyle(fontSize: 11, color: Colors.grey)) : null,
-      trailing: trailing ?? const Icon(Icons.chevron_right, size: 18),
-    ),
-  );
-
-  Widget _switch(IconData i, String t, bool v, Function(bool) c) => SwitchListTile(
-    secondary: Icon(i, color: Colors.white70), title: Text(t, style: const TextStyle(fontSize: 14)),
-    value: v, onChanged: c, activeColor: Colors.blueAccent,
-  );
+  Widget _tile(IconData i, String t, {String? sub, Widget? trailing, VoidCallback? onTap}) => TVButton(onTap: onTap ?? (){}, child: ListTile(leading: Icon(i), title: Text(t, style: const TextStyle(fontSize: 14)), subtitle: sub != null ? Text(sub, style: const TextStyle(fontSize: 11, color: Colors.blueAccent)) : null, trailing: trailing ?? const Icon(Icons.chevron_right, size: 18)));
 }
 
-// ==========================================
-// KELOLA SUMBER DATA (8 API ASLI)
-// ==========================================
-class SourceManagerPage extends StatelessWidget {
-  const SourceManagerPage({super.key});
-
+class SourceManager extends StatelessWidget {
+  const SourceManager({super.key});
   @override
   Widget build(BuildContext context) {
-    final List<Map<String, String>> apis = [
-      {"n": "Melolo", "d": "Nonton koleksi drama pendek Melolo terbaik."},
-      {"n": "DramaBox", "d": "Tempat nonton film dan serial TV favorit."},
-      {"n": "DotDrama", "d": "Update harian drama china populer."},
-      {"n": "Netshort", "d": "Video pendek dan drama vertikal."},
-      {"n": "Stardusttv", "d": "Konten premium dari platform Stardust."},
-      {"n": "Reelife", "d": "Drama pendek dengan kualitas HD."},
-      {"n": "DramaBite", "d": "Koleksi drama singkat paling viral."},
-      {"n": "Velolo", "d": "Sumber data alternatif untuk drama asia."},
-    ];
-
+    final List<String> apis = ["Melolo", "DramaBox", "DotDrama", "Netshort", "Stardusttv", "Reelife", "DramaBite", "Velolo"];
     return Scaffold(
-      appBar: AppBar(backgroundColor: const Color(0xFF161B22), title: const Text("Kelola Sumber Data")),
+      appBar: AppBar(title: const Text("Kelola Sumber Data"), backgroundColor: const Color(0xFF161B22)),
       body: ListView.builder(
         padding: const EdgeInsets.all(15),
         itemCount: apis.length,
-        itemBuilder: (c, i) => Container(
-          margin: const EdgeInsets.only(bottom: 10),
-          decoration: BoxDecoration(color: const Color(0xFF161B22), borderRadius: BorderRadius.circular(15)),
-          child: SwitchListTile(
-            title: Text(apis[i]['n']!, style: const TextStyle(fontWeight: FontWeight.bold)),
-            subtitle: Text(apis[i]['d']!, style: const TextStyle(fontSize: 11, color: Colors.grey)),
-            value: true,
-            onChanged: (v) {},
-            activeColor: Colors.blueAccent,
-          ),
-        ),
+        itemBuilder: (c, i) => Container(margin: const EdgeInsets.only(bottom: 10), decoration: BoxDecoration(color: const Color(0xFF161B22), borderRadius: BorderRadius.circular(15)), child: SwitchListTile(title: Text(apis[i]), value: true, onChanged: (v){}, activeColor: Colors.blueAccent)),
       ),
     );
   }
