@@ -8,12 +8,11 @@ class HomePage extends StatefulWidget {
 }
 
 class _HomePageState extends State<HomePage> {
-  List<String> activeApis = [];
   List<dynamic> dramas = [];
   bool isLoading = true;
   String selectedCategory = 'freereels';
   
-  final List<Map<String, String>> availableApis = [
+  final List<Map<String, String>> categories = [
     {'id': 'freereels', 'name': 'FreeReels'},
     {'id': 'melolo', 'name': 'Melolo'},
   ];
@@ -21,15 +20,7 @@ class _HomePageState extends State<HomePage> {
   @override
   void initState() { 
     super.initState(); 
-    _load();
     _fetchDramas();
-  }
-  
-  _load() async {
-    final p = await SharedPreferences.getInstance();
-    setState(() { 
-      activeApis = availableApis.where((api) => p.getBool('api_${api['id']}') ?? true).map((e) => e['name']!).toList();
-    });
   }
   
   Future<void> _fetchDramas() async {
@@ -38,12 +29,12 @@ class _HomePageState extends State<HomePage> {
     setState(() => isLoading = false);
   }
   
-  void _changeCategory(String categoryId) {
+  void _changeCategory(String categoryId) async {
     setState(() {
       selectedCategory = categoryId;
       isLoading = true;
     });
-    _fetchDramas();
+    await _fetchDramas();
   }
 
   @override
@@ -56,7 +47,7 @@ class _HomePageState extends State<HomePage> {
           IconButton(
             icon: const Icon(Icons.search, color: Colors.white),
             onPressed: () {
-              showSearch(context: context, delegate: DramaSearchDelegate());
+              Navigator.push(context, MaterialPageRoute(builder: (c) => const SearchPage()));
             },
           ),
         ],
@@ -69,17 +60,17 @@ class _HomePageState extends State<HomePage> {
             padding: const EdgeInsets.symmetric(horizontal: 15),
             child: ListView.builder(
               scrollDirection: Axis.horizontal,
-              itemCount: availableApis.length,
+              itemCount: categories.length,
               itemBuilder: (ctx, i) => Padding(
                 padding: const EdgeInsets.only(right: 10),
                 child: FilterChip(
-                  label: Text(availableApis[i]['name']!),
-                  selected: selectedCategory == availableApis[i]['id'],
-                  onSelected: (_) => _changeCategory(availableApis[i]['id']!),
+                  label: Text(categories[i]['name']!),
+                  selected: selectedCategory == categories[i]['id'],
+                  onSelected: (_) => _changeCategory(categories[i]['id']!),
                   backgroundColor: Colors.white10,
                   selectedColor: const Color(0xFF8B5CF6),
                   labelStyle: TextStyle(
-                    color: selectedCategory == availableApis[i]['id'] ? Colors.white : Colors.grey
+                    color: selectedCategory == categories[i]['id'] ? Colors.white : Colors.grey
                   ),
                 ),
               ),
@@ -94,8 +85,8 @@ class _HomePageState extends State<HomePage> {
                 : GridView.builder(
                     padding: const EdgeInsets.all(15),
                     gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                      crossAxisCount: 3,
-                      childAspectRatio: 0.65,
+                      crossAxisCount: 2,
+                      childAspectRatio: 0.7,
                       crossAxisSpacing: 10,
                       mainAxisSpacing: 10,
                     ),
@@ -111,9 +102,8 @@ class _HomePageState extends State<HomePage> {
   Widget _buildDramaCard(dynamic drama) {
     return InkWell(
       onTap: () {
-        // Navigator ke detail page
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text("Detail: ${drama['title']}"))
+          SnackBar(content: Text(drama['title'] ?? 'Drama'))
         );
       },
       child: Container(
@@ -131,13 +121,13 @@ class _HomePageState extends State<HomePage> {
               ),
               child: Image.network(
                 drama['cover'] ?? '',
-                height: 140,
+                height: 150,
                 width: double.infinity,
                 fit: BoxFit.cover,
                 errorBuilder: (_, __, ___) => Container(
-                  height: 140,
+                  height: 150,
                   color: Colors.grey[800],
-                  child: const Icon(Icons.movie, color: Colors.grey),
+                  child: const Icon(Icons.movie, color: Colors.grey, size: 40),
                 ),
               ),
             ),
@@ -167,9 +157,15 @@ class _HomePageState extends State<HomePage> {
   }
 }
 
-// Search Delegate
-class DramaSearchDelegate extends SearchDelegate {
-  List<dynamic> searchResults = [];
+// Halaman Pencarian
+class SearchPage extends StatefulWidget {
+  const SearchPage({super.key});
+  @override State<SearchPage> createState() => _SearchPageState();
+}
+
+class _SearchPageState extends State<SearchPage> {
+  final TextEditingController _controller = TextEditingController();
+  List<dynamic> results = [];
   bool isLoading = false;
   String selectedCategory = 'freereels';
   
@@ -178,108 +174,90 @@ class DramaSearchDelegate extends SearchDelegate {
     {'id': 'melolo', 'name': 'Melolo'},
   ];
   
-  @override
-  List<Widget>? buildActions(BuildContext context) {
-    return [
-      IconButton(icon: const Icon(Icons.clear), onPressed: () => query = ''),
-    ];
-  }
-
-  @override
-  Widget? buildLeading(BuildContext context) {
-    return IconButton(
-      icon: const Icon(Icons.arrow_back),
-      onPressed: () => close(context, null),
-    );
-  }
-
-  @override
-  Widget buildResults(BuildContext context) {
-    return _buildSearchResults();
-  }
-
-  @override
-  Widget buildSuggestions(BuildContext context) {
-    if (query.isEmpty) {
-      return const Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(Icons.search, size: 80, color: Colors.grey),
-            SizedBox(height: 20),
-            Text("Cari drama favoritmu", style: TextStyle(color: Colors.grey)),
-          ],
-        ),
-      );
-    }
-    return _buildSearchResults();
-  }
-  
-  Widget _buildSearchResults() {
-    return Column(
-      children: [
-        // Category filter
-        Container(
-          height: 50,
-          padding: const EdgeInsets.symmetric(horizontal: 15),
-          child: ListView.builder(
-            scrollDirection: Axis.horizontal,
-            itemCount: categories.length,
-            itemBuilder: (ctx, i) => Padding(
-              padding: const EdgeInsets.only(right: 10),
-              child: FilterChip(
-                label: Text(categories[i]['name']!),
-                selected: selectedCategory == categories[i]['id'],
-                onSelected: (_) {
-                  setState(() {
-                    selectedCategory = categories[i]['id']!;
-                    searchResults = [];
-                  });
-                  _performSearch();
-                },
-                backgroundColor: Colors.white10,
-                selectedColor: const Color(0xFF8B5CF6),
-              ),
-            ),
-          ),
-        ),
-        // Results
-        Expanded(
-          child: isLoading
-            ? const Center(child: CircularProgressIndicator())
-            : searchResults.isEmpty && query.isNotEmpty
-              ? const Center(child: Text("Tidak ada hasil", style: TextStyle(color: Colors.grey)))
-              : ListView.builder(
-                  itemCount: searchResults.length,
-                  itemBuilder: (c, i) => ListTile(
-                    leading: const Icon(Icons.movie, color: Color(0xFF8B5CF6)),
-                    title: Text(searchResults[i]['title'] ?? 'No Title', style: const TextStyle(color: Colors.white)),
-                    subtitle: Text('${searchResults[i]['views'] ?? 0} views', style: const TextStyle(color: Colors.grey)),
-                    onTap: () {
-                      close(context, null);
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        SnackBar(content: Text("Detail: ${searchResults[i]['title']}"))
-                      );
-                    },
-                  ),
-                ),
-        ),
-      ],
-    );
-  }
-  
-  void _performSearch() async {
-    if (query.isEmpty) return;
+  Future<void> _search() async {
+    if (_controller.text.isEmpty) return;
     setState(() => isLoading = true);
-    searchResults = await DramaAPI.search(selectedCategory, query, 'id');
+    results = await DramaAPI.search(selectedCategory, _controller.text, 'id');
     setState(() => isLoading = false);
   }
   
   @override
-  void updateQuery(String newQuery) {
-    super.updateQuery(newQuery);
-    if (newQuery.isNotEmpty) {
-      _performSearch();
-    }
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(
+        backgroundColor: const Color(0xFF161B22),
+        title: TextField(
+          controller: _controller,
+          autofocus: true,
+          style: const TextStyle(color: Colors.white),
+          onSubmitted: (_) => _search(),
+          decoration: const InputDecoration(
+            hintText: "Cari drama...",
+            hintStyle: TextStyle(color: Colors.grey),
+            border: InputBorder.none,
+          ),
+        ),
+      ),
+      body: Column(
+        children: [
+          // Category filter
+          Container(
+            height: 50,
+            padding: const EdgeInsets.symmetric(horizontal: 15),
+            child: ListView.builder(
+              scrollDirection: Axis.horizontal,
+              itemCount: categories.length,
+              itemBuilder: (ctx, i) => Padding(
+                padding: const EdgeInsets.only(right: 10),
+                child: FilterChip(
+                  label: Text(categories[i]['name']!),
+                  selected: selectedCategory == categories[i]['id'],
+                  onSelected: (_) {
+                    setState(() {
+                      selectedCategory = categories[i]['id']!;
+                      results = [];
+                    });
+                  },
+                  backgroundColor: Colors.white10,
+                  selectedColor: const Color(0xFF8B5CF6),
+                ),
+              ),
+            ),
+          ),
+          // Search button
+          Padding(
+            padding: const EdgeInsets.all(15),
+            child: ElevatedButton(
+              onPressed: _search,
+              style: ElevatedButton.styleFrom(
+                backgroundColor: const Color(0xFF8B5CF6),
+                minimumSize: const Size(double.infinity, 45),
+              ),
+              child: const Text("CARI", style: TextStyle(color: Colors.white)),
+            ),
+          ),
+          // Results
+          Expanded(
+            child: isLoading
+              ? const Center(child: CircularProgressIndicator())
+              : results.isEmpty
+                ? const Center(child: Text("Ketik judul dan tekan cari", style: TextStyle(color: Colors.grey)))
+                : ListView.builder(
+                    itemCount: results.length,
+                    itemBuilder: (c, i) => ListTile(
+                      leading: const Icon(Icons.movie, color: Color(0xFF8B5CF6)),
+                      title: Text(results[i]['title'] ?? 'No Title', style: const TextStyle(color: Colors.white)),
+                      subtitle: Text('${results[i]['views'] ?? 0} views', style: const TextStyle(color: Colors.grey)),
+                      onTap: () {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          SnackBar(content: Text(results[i]['title'] ?? 'Drama'))
+                        );
+                      },
+                    ),
+                  ),
+          ),
+        ],
+      ),
+    );
   }
 }
