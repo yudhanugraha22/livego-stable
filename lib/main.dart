@@ -12,8 +12,8 @@ class LivegoApp extends StatelessWidget {
     return MaterialApp(
       debugShowCheckedModeBanner: false,
       theme: ThemeData.dark().copyWith(
-        scaffoldBackgroundColor: const Color(0xFF0D1117), // Warna Hitam CineFlow
-        primaryColor: const Color(0xFF8B5CF6), // Ungu CineFlow
+        scaffoldBackgroundColor: const Color(0xFF0D1117),
+        primaryColor: const Color(0xFF8B5CF6),
       ),
       home: const MainNavigation(),
     );
@@ -21,7 +21,7 @@ class LivegoApp extends StatelessWidget {
 }
 
 // ==========================================
-// KOMPONEN KURSOR TV NEON (SANGAT TAJAM)
+// KURSOR TV NEON (FONDASI ABADI)
 // ==========================================
 class TVButton extends StatefulWidget {
   final Widget child;
@@ -47,13 +47,13 @@ class _TVButtonState extends State<TVButton> {
             borderRadius: BorderRadius.circular(widget.borderRadius),
             border: Border.all(
               color: _isFocused ? Colors.blueAccent : Colors.transparent, 
-              width: 3.5,
+              width: 3.0,
             ),
             boxShadow: _isFocused ? [
-              BoxShadow(color: Colors.blueAccent.withOpacity(0.8), blurRadius: 20, spreadRadius: 3)
+              BoxShadow(color: Colors.blueAccent.withOpacity(0.7), blurRadius: 15, spreadRadius: 2)
             ] : [],
           ),
-          transform: _isFocused ? (Matrix4.identity()..scale(1.05)) : Matrix4.identity(),
+          transform: _isFocused ? (Matrix4.identity()..scale(1.04)) : Matrix4.identity(),
           child: widget.child,
         ),
       ),
@@ -62,7 +62,7 @@ class _TVButtonState extends State<TVButton> {
 }
 
 // ==========================================
-// NAVIGASI UTAMA & FITUR EXIT (HAPUS CACHE)
+// NAVIGASI UTAMA
 // ==========================================
 class MainNavigation extends StatefulWidget {
   const MainNavigation({super.key});
@@ -75,11 +75,9 @@ class _MainNavigationState extends State<MainNavigation> {
   final List<Widget> _pages = [const HomePage(), const Center(child: Text("Halaman Unduhan")), const AccountPage()];
 
   Future<void> _clearCacheAndExit() async {
-    try {
-      final cacheDir = await getTemporaryDirectory();
-      if (cacheDir.existsSync()) { cacheDir.deleteSync(recursive: true); }
-      SystemNavigator.pop();
-    } catch (e) { SystemNavigator.pop(); }
+    final cacheDir = await getTemporaryDirectory();
+    if (cacheDir.existsSync()) { cacheDir.deleteSync(recursive: true); }
+    SystemNavigator.pop();
   }
 
   Future<bool> _showExitDialog() async {
@@ -87,16 +85,11 @@ class _MainNavigationState extends State<MainNavigation> {
       context: context,
       builder: (context) => AlertDialog(
         backgroundColor: const Color(0xFF161B22),
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-        title: const Text("Keluar Aplikasi", style: TextStyle(color: Colors.blueAccent, fontWeight: FontWeight.bold)),
-        content: const Text("Yakin ingin keluar dan bersihkan cache?"),
+        title: const Text("Keluar", style: TextStyle(color: Colors.blueAccent)),
+        content: const Text("Keluar dan bersihkan cache?"),
         actions: [
-          TextButton(onPressed: () => Navigator.of(context).pop(false), child: const Text("Batal")),
-          ElevatedButton(
-            style: ElevatedButton.styleFrom(backgroundColor: Colors.redAccent),
-            onPressed: () => _clearCacheAndExit(), 
-            child: const Text("Ya, Keluar")
-          ),
+          TextButton(onPressed: () => Navigator.pop(context, false), child: const Text("Batal")),
+          ElevatedButton(onPressed: _clearCacheAndExit, style: ElevatedButton.styleFrom(backgroundColor: Colors.red), child: const Text("Keluar")),
         ],
       ),
     ) ?? false;
@@ -106,9 +99,9 @@ class _MainNavigationState extends State<MainNavigation> {
   Widget build(BuildContext context) {
     return PopScope(
       canPop: false,
-      onPopInvoked: (didPop) { if (!didPop) _showExitDialog(); },
+      onPopInvoked: (did) { if(!did) _showExitDialog(); },
       child: Scaffold(
-        body: _pages[_currentIndex],
+        body: IndexedStack(index: _currentIndex, children: _pages),
         bottomNavigationBar: BottomNavigationBar(
           currentIndex: _currentIndex,
           onTap: (i) => setState(() => _currentIndex = i),
@@ -117,7 +110,7 @@ class _MainNavigationState extends State<MainNavigation> {
           type: BottomNavigationBarType.fixed,
           items: const [
             BottomNavigationBarItem(icon: Icon(Icons.home_filled), label: "HOME"),
-            BottomNavigationBarItem(icon: Icon(Icons.download_rounded), label: "UNDUHAN"),
+            BottomNavigationBarItem(icon: Icon(Icons.download), label: "UNDUHAN"),
             BottomNavigationBarItem(icon: Icon(Icons.person_rounded), label: "AKUN"),
           ],
         ),
@@ -127,149 +120,76 @@ class _MainNavigationState extends State<MainNavigation> {
 }
 
 // ==========================================
-// HALAMAN HOME (CINEFLOW TV STYLE)
+// HALAMAN BERANDA (GRID 7x2 TV)
 // ==========================================
-class HomePage extends StatefulWidget {
+class HomePage extends StatelessWidget {
   const HomePage({super.key});
-  @override
-  State<HomePage> createState() => _HomePageState();
-}
-
-class _HomePageState extends State<HomePage> {
-  final List<String> sources = ["Melolo", "DramaBox", "DotDrama", "Netshort", "Stardusttv", "Reelife", "DramaBite", "Velolo"];
-  final List<String> cats = ["Populer", "New", "Segera Hadir", "Dubbing", "Trend"];
-  String selSource = "Melolo";
-  String selCat = "Populer";
-
   @override
   Widget build(BuildContext context) {
     bool isTV = MediaQuery.of(context).size.width > 900;
-
     return Scaffold(
-      appBar: AppBar(
-        backgroundColor: const Color(0xFF161B22),
-        elevation: 0,
-        title: const Text("Livego", style: TextStyle(fontWeight: FontWeight.bold, color: Colors.blueAccent)),
-        actions: [
-          IconButton(icon: const Icon(Icons.history), onPressed: () {}),
-          IconButton(icon: const Icon(Icons.favorite_border), onPressed: () {}),
-          IconButton(icon: const Icon(Icons.search), onPressed: () {}),
-        ],
-      ),
+      appBar: AppBar(backgroundColor: const Color(0xFF161B22), title: const Text("Livego")),
       body: SingleChildScrollView(
         child: Column(
           children: [
             const SizedBox(height: 15),
             _buildBanner(),
             const SizedBox(height: 15),
-            _buildHList(sources, selSource, (v) => setState(() => selSource = v), const Color(0xFF8B5CF6)),
-            const SizedBox(height: 10),
-            _buildHList(cats, selCat, (v) => setState(() => selCat = v), Colors.blueAccent),
-            const SizedBox(height: 15),
-            _buildMovieGrid(isTV),
+            _buildGrid(isTV),
           ],
         ),
       ),
     );
   }
 
-  Widget _buildBanner() {
-    return Container(
-      margin: const EdgeInsets.symmetric(horizontal: 15),
-      child: TVButton(
-        onTap: () {},
-        child: Container(
-          height: 170, width: double.infinity,
-          decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(20),
-            image: const DecorationImage(image: NetworkImage("https://via.placeholder.com/600x300/1e293b/ffffff"), fit: BoxFit.cover),
-          ),
-          child: Container(
-            padding: const EdgeInsets.all(15),
-            decoration: BoxDecoration(borderRadius: BorderRadius.circular(20), gradient: const LinearGradient(begin: Alignment.bottomCenter, colors: [Colors.black, Colors.transparent])),
-            alignment: Alignment.bottomLeft,
-            child: Text("Drama Terpopuler di $selSource", style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
-          ),
-        ),
-      ),
-    );
-  }
+  Widget _buildBanner() => Container(
+    height: 180, margin: const EdgeInsets.symmetric(horizontal: 15),
+    decoration: BoxDecoration(borderRadius: BorderRadius.circular(20), color: Colors.white10),
+    alignment: Alignment.center, child: const Text("BANNER CINEFLOW STYLE"),
+  );
 
-  Widget _buildHList(List list, String sel, Function(String) onSel, Color color) {
-    return SizedBox(
-      height: 40,
-      child: ListView.builder(
-        scrollDirection: Axis.horizontal, padding: const EdgeInsets.symmetric(horizontal: 15),
-        itemCount: list.length,
-        itemBuilder: (c, i) => Padding(
-          padding: const EdgeInsets.only(right: 8),
-          child: TVButton(
-            borderRadius: 20,
-            onTap: () => onSel(list[i]),
-            child: Container(
-              padding: const EdgeInsets.symmetric(horizontal: 20), alignment: Alignment.center,
-              decoration: BoxDecoration(color: sel == list[i] ? color : Colors.white10, borderRadius: BorderRadius.circular(20)),
-              child: Text(list[i], style: const TextStyle(fontSize: 12)),
-            ),
-          ),
-        ),
-      ),
-    );
-  }
-
-  Widget _buildMovieGrid(bool isTV) {
-    return GridView.builder(
-      shrinkWrap: true, physics: const NeverScrollableScrollPhysics(),
-      padding: const EdgeInsets.all(15),
-      gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-        crossAxisCount: 4, childAspectRatio: 0.65, crossAxisSpacing: 12, mainAxisSpacing: 12,
-      ),
-      itemCount: isTV ? 8 : 12, // TV 8 kotak, HP 12 kotak
-      itemBuilder: (c, i) => Column(
-        children: [
-          Expanded(
-            child: TVButton(
-              onTap: () {},
-              child: Container(
-                decoration: BoxDecoration(
-                  color: Colors.white10, borderRadius: BorderRadius.circular(12),
-                  image: const DecorationImage(image: NetworkImage("https://via.placeholder.com/200x300"), fit: BoxFit.cover),
-                ),
-              ),
-            ),
-          ),
-          const SizedBox(height: 5),
-          const Text("Judul Film...", style: TextStyle(fontSize: 10), maxLines: 1),
-        ],
-      ),
-    );
-  }
+  Widget _buildGrid(bool isTV) => GridView.builder(
+    shrinkWrap: true, physics: const NeverScrollableScrollPhysics(),
+    padding: const EdgeInsets.all(15),
+    gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+      crossAxisCount: isTV ? 7 : 4, childAspectRatio: 0.65, crossAxisSpacing: 10, mainAxisSpacing: 10
+    ),
+    itemCount: isTV ? 14 : 12,
+    itemBuilder: (c, i) => TVButton(onTap: (){}, child: Container(decoration: BoxDecoration(color: Colors.white10, borderRadius: BorderRadius.circular(10)))),
+  );
 }
 
 // ==========================================
-// HALAMAN AKUN (MEWAH CINEFLOW STYLE)
+// HALAMAN AKUN (IDENTIK CINEFLOW)
 // ==========================================
 class AccountPage extends StatelessWidget {
   const AccountPage({super.key});
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(15),
         child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             const SizedBox(height: 50),
-            _buildProfileCard(),
+            _buildCineFlowHeader(),
             const SizedBox(height: 25),
-            _buildMenuSection(context, "KOLEKSI CEPAT", [
-              _menuItem(context, Icons.history, "Riwayat", "Lanjutkan tontonan terakhir"),
-              _menuItem(context, Icons.favorite_border, "Favorit", "Daftar drama yang disimpan"),
-              _menuItem(context, Icons.settings, "Pengaturan", "Atur Player, DRM, & Tampilan"),
+            _buildSectionLabel("KOLEKSI CEPAT"),
+            _buildCineCard([
+              _cineItem(context, Icons.history, "Riwayat", "Lanjutkan dari tontonan terakhir", () {}),
+              _cineItem(context, Icons.favorite_border, "Favorit", "Buka daftar judul favorit Anda", () {}),
+              _cineItem(context, Icons.settings_outlined, "Pengaturan", "Atur tampilan, player, dan source", () {
+                Navigator.push(context, MaterialPageRoute(builder: (c) => const SettingsPage()));
+              }),
             ]),
             const SizedBox(height: 25),
-            _buildMenuSection(context, "DUKUNGAN", [
-              _menuItem(context, Icons.system_update, "Pembaruan", "Cek versi terbaru"),
-              _menuItem(context, Icons.feedback, "Feedback", "Laporkan masalah aplikasi"),
+            _buildSectionLabel("APLIKASI & DUKUNGAN"),
+            _buildCineCard([
+              _cineItem(context, Icons.system_update_alt, "Periksa Pembaruan", "Cek versi terbaru Livego", () {}),
+              _cineItem(context, Icons.share, "Dukung Livego", "Bantu maintenance lewat donasi", () {}),
+              _cineItem(context, Icons.feedback_outlined, "Kirim Feedback", "Laporkan bug atau masalah", () {}),
             ]),
           ],
         ),
@@ -277,40 +197,63 @@ class AccountPage extends StatelessWidget {
     );
   }
 
-  Widget _buildProfileCard() {
+  Widget _buildCineFlowHeader() {
     return Container(
       padding: const EdgeInsets.all(20),
-      decoration: BoxDecoration(color: const Color(0xFF161B22), borderRadius: BorderRadius.circular(20)),
-      child: const Row(children: [
-        CircleAvatar(radius: 30, backgroundColor: Colors.blueAccent, child: Icon(Icons.person, size: 35)),
-        SizedBox(width: 15),
-        Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-          Text("User Penggemar", style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
-          Text("Akun Gratis / VIP", style: TextStyle(color: Colors.grey, fontSize: 12)),
-        ]),
-      ]),
+      decoration: BoxDecoration(borderRadius: BorderRadius.circular(25), color: const Color(0xFF161B22)),
+      child: Column(
+        children: [
+          Row(
+            children: [
+              const CircleAvatar(radius: 35, backgroundColor: Color(0xFF8B5CF6), child: Icon(Icons.play_arrow, size: 40, color: Colors.white)),
+              const SizedBox(width: 15),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Text("User Penggemar", style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
+                    Text("Akun CineFlow", style: TextStyle(color: Colors.white.withOpacity(0.5), fontSize: 13)),
+                  ],
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 20),
+          Row(
+            children: [
+              _socialBtn("Telegram", Colors.blue),
+              const SizedBox(width: 10),
+              _socialBtn("WhatsApp", Colors.green),
+            ],
+          )
+        ],
+      ),
     );
   }
 
-  Widget _buildMenuSection(BuildContext context, String title, List<Widget> items) {
-    return Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-      Padding(padding: const EdgeInsets.only(left: 10, bottom: 8), child: Text(title, style: const TextStyle(fontSize: 11, color: Colors.grey, fontWeight: FontWeight.bold))),
-      Container(decoration: BoxDecoration(color: const Color(0xFF161B22), borderRadius: BorderRadius.circular(20)), child: Column(children: items)),
-    ]);
-  }
+  Widget _socialBtn(String t, Color c) => Container(
+    padding: const EdgeInsets.symmetric(horizontal: 15, vertical: 8),
+    decoration: BoxDecoration(borderRadius: BorderRadius.circular(10), color: Colors.white10),
+    child: Text(t, style: const TextStyle(fontSize: 12)),
+  );
 
-  Widget _menuItem(BuildContext context, IconData icon, String title, String sub) {
-    return TVButton(
-      onTap: () {
-        if (title == "Pengaturan") Navigator.push(context, MaterialPageRoute(builder: (c) => const SettingsPage()));
-      },
-      child: ListTile(leading: Icon(icon, color: Colors.white70), title: Text(title), subtitle: Text(sub, style: const TextStyle(fontSize: 11, color: Colors.grey)), trailing: const Icon(Icons.chevron_right, size: 18)),
-    );
-  }
+  Widget _buildSectionLabel(String t) => Padding(padding: const EdgeInsets.only(left: 10, bottom: 10), child: Text(t, style: const TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: Colors.grey)));
+
+  Widget _buildCineCard(List<Widget> items) => Container(decoration: BoxDecoration(color: const Color(0xFF161B22), borderRadius: BorderRadius.circular(20)), child: Column(children: items));
+
+  Widget _cineItem(BuildContext ctx, IconData i, String t, String s, VoidCallback click) => TVButton(
+    onTap: click,
+    child: ListTile(
+      leading: Container(padding: const EdgeInsets.all(8), decoration: const BoxDecoration(color: Colors.white10, shape: BoxShape.circle), child: Icon(i, size: 20)),
+      title: Text(t, style: const TextStyle(fontSize: 14, fontWeight: FontWeight.bold)),
+      subtitle: Text(s, style: const TextStyle(fontSize: 11, color: Colors.grey)),
+      trailing: const Icon(Icons.chevron_right, size: 18),
+    ),
+  );
 }
 
 // ==========================================
-// HALAMAN PENGATURAN (DRM L1, L2, L3)
+// HALAMAN PENGATURAN (DETAIIL CINEFLOW)
 // ==========================================
 class SettingsPage extends StatefulWidget {
   const SettingsPage({super.key});
@@ -319,44 +262,100 @@ class SettingsPage extends StatefulWidget {
 }
 
 class _SettingsPageState extends State<SettingsPage> {
-  String widevine = "Auto";
+  bool bgPoster = false;
+  bool cachePlay = true;
+  bool rotasi = true;
+  String drm = "AUTO";
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text("Pengaturan Livego"), backgroundColor: const Color(0xFF161B22)),
+      appBar: AppBar(backgroundColor: const Color(0xFF0D1117), title: const Text("Pengaturan Livego")),
       body: ListView(
         padding: const EdgeInsets.all(15),
         children: [
-          _buildSect("PLAYER"),
-          Container(
-            decoration: BoxDecoration(color: const Color(0xFF161B22), borderRadius: BorderRadius.circular(15)),
-            child: Column(children: [
-              TVButton(
-                onTap: () => _showDRMDialog(),
-                child: ListTile(
-                  leading: const Icon(Icons.lock_person),
-                  title: const Text("Kompatibilitas Widevine DRM"),
-                  subtitle: Text(widevine, style: const TextStyle(color: Colors.blueAccent)),
-                  trailing: const Icon(Icons.chevron_right),
-                ),
-              ),
-              TVButton(onTap: () {}, child: const ListTile(leading: Icon(Icons.cached), title: Text("Gunakan Cache Playback"), trailing: Icon(Icons.toggle_on, color: Colors.blueAccent))),
-            ]),
-          ),
+          _group("TAMPILAN & NAVIGASI", [
+            _tile(Icons.settings_suggest, "Otomatis (Ikuti Hardware)", trailing: const Icon(Icons.radio_button_checked, color: Colors.blueAccent)),
+          ]),
+          const SizedBox(height: 20),
+          _group("PLAYER", [
+            _switch(Icons.image_outlined, "Tampilkan Background Poster", bgPoster, (v)=>setState(()=>bgPoster=v)),
+            _switch(Icons.cached, "Gunakan Cache Playback", cachePlay, (v)=>setState(()=>cachePlay=v)),
+            _switch(Icons.screen_rotation, "Tampilkan Tombol Rotasi", rotasi, (v)=>setState(()=>rotasi=v)),
+            _tile(Icons.lock_outline, "Kompatibilitas Widevine DRM", sub: drm),
+          ]),
+          const SizedBox(height: 20),
+          _group("SUMBER & IZIN", [
+            _tile(Icons.layers_outlined, "Kelola Sumber Data", sub: "Aktifkan hanya source yang ingin muncul", onTap: () {
+              Navigator.push(context, MaterialPageRoute(builder: (c) => const SourceManagerPage()));
+            }),
+          ]),
+          const SizedBox(height: 20),
+          _group("PERAWATAN", [
+            _tile(Icons.delete_sweep_outlined, "Hapus Semua Cache", color: Colors.redAccent),
+          ]),
         ],
       ),
     );
   }
 
-  void _showDRMDialog() {
-    showDialog(context: context, builder: (c) => AlertDialog(
-      title: const Text("Mode Widevine DRM"),
-      backgroundColor: const Color(0xFF161B22),
-      content: Column(mainAxisSize: MainAxisSize.min, children: ["Auto", "Paksa L1", "Paksa L3"].map((v) => RadioListTile(
-        title: Text(v), value: v, groupValue: widevine, 
-        onChanged: (val) { setState(() => widevine = val.toString()); Navigator.pop(context); }
-      )).toList()),
-    ));
+  Widget _group(String t, List<Widget> c) => Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+    Padding(padding: const EdgeInsets.only(left: 10, bottom: 10), child: Text(t, style: const TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: Colors.grey))),
+    Container(decoration: BoxDecoration(color: const Color(0xFF161B22), borderRadius: BorderRadius.circular(15)), child: Column(children: c)),
+  ]);
+
+  Widget _tile(IconData i, String t, {String? sub, Widget? trailing, VoidCallback? onTap, Color? color}) => TVButton(
+    onTap: onTap ?? (){},
+    child: ListTile(
+      leading: Icon(i, color: color ?? Colors.white70),
+      title: Text(t, style: TextStyle(fontSize: 14, color: color)),
+      subtitle: sub != null ? Text(sub, style: const TextStyle(fontSize: 11, color: Colors.grey)) : null,
+      trailing: trailing ?? const Icon(Icons.chevron_right, size: 18),
+    ),
+  );
+
+  Widget _switch(IconData i, String t, bool v, Function(bool) c) => SwitchListTile(
+    secondary: Icon(i, color: Colors.white70), title: Text(t, style: const TextStyle(fontSize: 14)),
+    value: v, onChanged: c, activeColor: Colors.blueAccent,
+  );
+}
+
+// ==========================================
+// KELOLA SUMBER DATA (8 API ASLI)
+// ==========================================
+class SourceManagerPage extends StatelessWidget {
+  const SourceManagerPage({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    final List<Map<String, String>> apis = [
+      {"n": "Melolo", "d": "Nonton koleksi drama pendek Melolo terbaik."},
+      {"n": "DramaBox", "d": "Tempat nonton film dan serial TV favorit."},
+      {"n": "DotDrama", "d": "Update harian drama china populer."},
+      {"n": "Netshort", "d": "Video pendek dan drama vertikal."},
+      {"n": "Stardusttv", "d": "Konten premium dari platform Stardust."},
+      {"n": "Reelife", "d": "Drama pendek dengan kualitas HD."},
+      {"n": "DramaBite", "d": "Koleksi drama singkat paling viral."},
+      {"n": "Velolo", "d": "Sumber data alternatif untuk drama asia."},
+    ];
+
+    return Scaffold(
+      appBar: AppBar(backgroundColor: const Color(0xFF161B22), title: const Text("Kelola Sumber Data")),
+      body: ListView.builder(
+        padding: const EdgeInsets.all(15),
+        itemCount: apis.length,
+        itemBuilder: (c, i) => Container(
+          margin: const EdgeInsets.only(bottom: 10),
+          decoration: BoxDecoration(color: const Color(0xFF161B22), borderRadius: BorderRadius.circular(15)),
+          child: SwitchListTile(
+            title: Text(apis[i]['n']!, style: const TextStyle(fontWeight: FontWeight.bold)),
+            subtitle: Text(apis[i]['d']!, style: const TextStyle(fontSize: 11, color: Colors.grey)),
+            value: true,
+            onChanged: (v) {},
+            activeColor: Colors.blueAccent,
+          ),
+        ),
+      ),
+    );
   }
-  Widget _buildSect(String t) => Padding(padding: const EdgeInsets.only(left: 10, bottom: 8), child: Text(t, style: const TextStyle(fontSize: 11, color: Colors.grey, fontWeight: FontWeight.bold)));
 }
